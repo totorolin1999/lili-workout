@@ -33,8 +33,8 @@ export default async function LocaleLayout(props: LayoutProps<'/[locale]'>) {
 
   return (
     <NextIntlClientProvider messages={messages} locale={locale}>
-      <html lang={locale}>
-        <body>
+      <html lang={locale} suppressHydrationWarning>
+        <body suppressHydrationWarning>
           <div className="min-h-screen bg-background flex flex-col">
             {/* App shell — constrained to mobile width on desktop */}
             <div className="w-full max-w-md mx-auto flex flex-col min-h-screen
