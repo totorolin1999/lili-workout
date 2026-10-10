@@ -1,4 +1,4 @@
-import { getTranslations } from 'next-intl/server'
+import { getTranslations, setRequestLocale } from 'next-intl/server'
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { getWorkoutHistory, type WorkoutHistoryEntry } from '@/lib/actions/workout'
@@ -9,12 +9,14 @@ import { Calendar, Dumbbell } from 'lucide-react'
 
 export async function generateMetadata({ params }: PageProps<'/[locale]/history'>) {
   const { locale } = await params
+  setRequestLocale(locale)
   const t = await getTranslations({ locale, namespace: 'history' })
   return { title: t('title') }
 }
 
 export default async function HistoryPage({ params }: PageProps<'/[locale]/history'>) {
   const { locale } = await params
+  setRequestLocale(locale)
   const supabase = await createClient()
 
   const { data: { user } } = await supabase.auth.getUser()

@@ -1,5 +1,5 @@
 import { NextIntlClientProvider } from 'next-intl'
-import { getMessages } from 'next-intl/server'
+import { getMessages, getTranslations, setRequestLocale } from 'next-intl/server'
 import { notFound } from 'next/navigation'
 import { routing } from '@/i18n/routing'
 import { createClient } from '@/lib/supabase/server'
@@ -21,8 +21,12 @@ export default async function LocaleLayout(props: LayoutProps<'/[locale]'>) {
     notFound()
   }
 
-  // Fetch messages for this locale
-  const messages = await getMessages()
+  setRequestLocale(locale)
+
+  // Fetch messages and translations for this locale
+  const messages = await getMessages({ locale })
+  const tApp = await getTranslations({ locale, namespace: 'app' })
+  const tNav = await getTranslations({ locale, namespace: 'nav' })
 
   // Check auth — redirect to login if unauthenticated (except for login page itself)
   const supabase = await createClient()
@@ -39,7 +43,7 @@ export default async function LocaleLayout(props: LayoutProps<'/[locale]'>) {
             <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur">
               <div className="flex items-center justify-between px-4 py-3">
                 <Link href={`/${locale}`} className="text-base font-bold text-foreground tracking-tight">
-                  🏋️ Edzésnapló
+                  🏋️ {tApp('name')}
                 </Link>
                 <div className="flex items-center gap-3">
                   <LanguageSwitcher />
@@ -47,7 +51,7 @@ export default async function LocaleLayout(props: LayoutProps<'/[locale]'>) {
                     <button
                       type="submit"
                       className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-                      aria-label="Kijelentkezés"
+                      aria-label={tNav('logout')}
                     >
                       <LogOut className="h-4 w-4" />
                     </button>
@@ -66,9 +70,9 @@ export default async function LocaleLayout(props: LayoutProps<'/[locale]'>) {
           {user && (
             <nav className="sticky bottom-0 z-40 border-t border-border bg-background/95 backdrop-blur">
               <div className="grid grid-cols-3 divide-x divide-border">
-                <NavItem href={`/${locale}`} icon={<Dumbbell className="h-5 w-5" />} label="Edzés" />
-                <NavItem href={`/${locale}/exercises`} icon={<BookOpen className="h-5 w-5" />} label="Gyakorlatok" />
-                <NavItem href={`/${locale}/history`} icon={<History className="h-5 w-5" />} label="Előzmények" />
+                <NavItem href={`/${locale}`} icon={<Dumbbell className="h-5 w-5" />} label={tNav('workout')} />
+                <NavItem href={`/${locale}/exercises`} icon={<BookOpen className="h-5 w-5" />} label={tNav('exercises')} />
+                <NavItem href={`/${locale}/history`} icon={<History className="h-5 w-5" />} label={tNav('history')} />
               </div>
             </nav>
           )}

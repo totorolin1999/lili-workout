@@ -5,6 +5,7 @@
   },
   "nav": {
     "home": "Home",
+    "workout": "Workout",
     "exercises": "Exercises",
     "history": "History",
     "settings": "Settings",
@@ -67,6 +68,7 @@
     "nameLabel": "Exercise name (in English)",
     "namePlaceholder": "e.g. Push-up",
     "optionalTranslations": "Optional Translations",
+    "nameHuLabel": "Name (Hungarian)",
     "nameEnLabel": "Name (English)",
     "nameZhLabel": "Name (Chinese)",
     "categoryLabel": "Category",
@@ -124,6 +126,8 @@
     "close": "Close",
     "confirm": "Confirm",
     "yes": "Yes",
-    "no": "No"
+    "no": "No",
+    "expand": "Expand",
+    "collapse": "Collapse"
   }
 }

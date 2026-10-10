@@ -25,7 +25,14 @@ export async function proxy(request: NextRequest) {
   }
 
   // Apply next-intl locale routing
-  return intlMiddleware(request)
+  const response = intlMiddleware(request)
+
+  // Preserve Supabase session cookies
+  sessionResponse.cookies.getAll().forEach((cookie) => {
+    response.cookies.set(cookie.name, cookie.value, cookie)
+  })
+
+  return response
 }
 
 export const config = {

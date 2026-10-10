@@ -1,4 +1,4 @@
-import { getTranslations } from 'next-intl/server'
+import { getTranslations, setRequestLocale } from 'next-intl/server'
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import LoginForm from '@/components/LoginForm'
@@ -7,12 +7,14 @@ import LanguageSwitcher from '@/components/LanguageSwitcher'
 
 export async function generateMetadata({ params }: PageProps<'/[locale]/login'>) {
   const { locale } = await params
+  setRequestLocale(locale)
   const t = await getTranslations({ locale, namespace: 'auth' })
   return { title: t('title') }
 }
 
 export default async function LoginPage({ params }: PageProps<'/[locale]/login'>) {
   const { locale } = await params
+  setRequestLocale(locale)
   const supabase = await createClient()
 
   const { data: { user } } = await supabase.auth.getUser()
@@ -21,6 +23,7 @@ export default async function LoginPage({ params }: PageProps<'/[locale]/login'>
   }
 
   const t = await getTranslations({ locale, namespace: 'auth' })
+  const tApp = await getTranslations({ locale, namespace: 'app' })
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[80vh] gap-8 px-2">
@@ -34,7 +37,7 @@ export default async function LoginPage({ params }: PageProps<'/[locale]/login'>
         {/* Logo / Title */}
         <div className="text-center space-y-2">
           <div className="text-5xl">🏋️</div>
-          <h1 className="text-2xl font-bold text-foreground">Edzésnapló</h1>
+          <h1 className="text-2xl font-bold text-foreground">{tApp('name')}</h1>
           <p className="text-sm text-muted-foreground">{t('subtitle')}</p>
         </div>
 

@@ -51,6 +51,7 @@ interface LastSession {
 
 export default function WorkoutLogger({ exercises }: WorkoutLoggerProps) {
   const t = useTranslations('workout')
+  const tCommon = useTranslations('common')
   const locale = useLocale() as Locale
   const [isPending, startTransition] = useTransition()
   const [showTimer, setShowTimer] = useState(false)
@@ -165,6 +166,7 @@ export default function WorkoutLogger({ exercises }: WorkoutLoggerProps) {
               exercises={exercises}
               locale={locale}
               t={t}
+              tCommon={tCommon}
               lastSession={lastSessions[watchedGroups[groupIdx]?.exercise_id] ?? null}
               onExerciseChange={(id) => fetchLastSession(id)}
               onRemoveGroup={() => removeGroup(groupIdx)}
@@ -231,6 +233,7 @@ interface ExerciseGroupCardProps {
   exercises: Exercise[]
   locale: Locale
   t: ReturnType<typeof useTranslations<'workout'>>
+  tCommon: ReturnType<typeof useTranslations<'common'>>
   lastSession: LastSession | null
   onExerciseChange: (id: string) => void
   onRemoveGroup: () => void
@@ -238,7 +241,7 @@ interface ExerciseGroupCardProps {
 }
 
 function ExerciseGroupCard({
-  groupIdx, form, exercises, locale, t, lastSession,
+  groupIdx, form, exercises, locale, t, tCommon, lastSession,
   onExerciseChange, onRemoveGroup, onSetCompleted,
 }: ExerciseGroupCardProps) {
   const [isCollapsed, setIsCollapsed] = useState(false)
@@ -284,7 +287,7 @@ function ExerciseGroupCard({
           type="button"
           onClick={() => setIsCollapsed((p) => !p)}
           className="p-1 rounded-lg hover:bg-muted transition-colors"
-          aria-label={isCollapsed ? 'Expand' : 'Collapse'}
+          aria-label={isCollapsed ? tCommon('expand') : tCommon('collapse')}
         >
           {isCollapsed ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
         </button>

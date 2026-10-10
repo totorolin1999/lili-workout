@@ -1,4 +1,4 @@
-import { getTranslations } from 'next-intl/server'
+import { getTranslations, setRequestLocale } from 'next-intl/server'
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { getExercises } from '@/lib/actions/exercise'
@@ -8,12 +8,14 @@ import ExerciseManager from '@/components/ExerciseManager'
 
 export async function generateMetadata({ params }: PageProps<'/[locale]/exercises'>) {
   const { locale } = await params
+  setRequestLocale(locale)
   const t = await getTranslations({ locale, namespace: 'exercises' })
   return { title: t('title') }
 }
 
 export default async function ExercisesPage({ params }: PageProps<'/[locale]/exercises'>) {
   const { locale } = await params
+  setRequestLocale(locale)
   const supabase = await createClient()
 
   const { data: { user } } = await supabase.auth.getUser()

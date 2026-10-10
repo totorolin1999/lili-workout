@@ -1,5 +1,5 @@
 import { connection } from 'next/server'
-import { getTranslations } from 'next-intl/server'
+import { getTranslations, setRequestLocale } from 'next-intl/server'
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { getExercises } from '@/lib/actions/exercise'
@@ -9,6 +9,7 @@ import WorkoutLogger from '@/components/WorkoutLogger'
 
 export async function generateMetadata({ params }: PageProps<'/[locale]'>) {
   const { locale } = await params
+  setRequestLocale(locale)
   const t = await getTranslations({ locale, namespace: 'workout' })
   return { title: t('title') }
 }
@@ -16,6 +17,7 @@ export async function generateMetadata({ params }: PageProps<'/[locale]'>) {
 export default async function HomePage({ params }: PageProps<'/[locale]'>) {
   await connection()
   const { locale } = await params
+  setRequestLocale(locale)
   const supabase = await createClient()
 
   const { data: { user } } = await supabase.auth.getUser()

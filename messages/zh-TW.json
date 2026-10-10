@@ -5,6 +5,7 @@
   },
   "nav": {
     "home": "首頁",
+    "workout": "訓練",
     "exercises": "動作庫",
     "history": "訓練記錄",
     "settings": "設定",
@@ -67,6 +68,7 @@
     "nameLabel": "動作名稱（中文）",
     "namePlaceholder": "例：伏地挺身",
     "optionalTranslations": "選填翻譯",
+    "nameHuLabel": "名稱（匈牙利語）",
     "nameEnLabel": "名稱（英文）",
     "nameZhLabel": "名稱（中文）",
     "categoryLabel": "分類",
@@ -124,6 +126,8 @@
     "close": "關閉",
     "confirm": "確認",
     "yes": "是",
-    "no": "否"
+    "no": "否",
+    "expand": "展開",
+    "collapse": "摺疊"
   }
 }

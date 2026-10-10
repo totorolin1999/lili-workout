@@ -195,7 +195,7 @@ export default function ExerciseManager({ exercises: initialExercises, locale }:
             <div className="space-y-2 pl-2 border-l-2 border-border">
               {locale !== 'hu' && (
                 <div className="space-y-1">
-                  <label className="text-xs font-medium text-muted-foreground">{t('nameEnLabel')}</label>
+                  <label className="text-xs font-medium text-muted-foreground">{t('nameHuLabel')}</label>
                   <input
                     {...form.register('name_hu')}
                     placeholder="pl. Fekvőtámasz"

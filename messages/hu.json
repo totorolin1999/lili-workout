@@ -5,6 +5,7 @@
   },
   "nav": {
     "home": "Főoldal",
+    "workout": "Edzés",
     "exercises": "Gyakorlatok",
     "history": "Előzmények",
     "settings": "Beállítások",
@@ -67,6 +68,7 @@
     "nameLabel": "Gyakorlat neve (magyarul)",
     "namePlaceholder": "pl. Fekvőtámasz",
     "optionalTranslations": "Opcionális fordítások",
+    "nameHuLabel": "Név (magyarul)",
     "nameEnLabel": "Név (angolul)",
     "nameZhLabel": "Név (kínai)",
     "categoryLabel": "Kategória",
@@ -124,6 +126,8 @@
     "close": "Bezárás",
     "confirm": "Megerősítés",
     "yes": "Igen",
-    "no": "Nem"
+    "no": "Nem",
+    "expand": "Kibontás",
+    "collapse": "Összecsukás"
   }
 }
