@@ -33,7 +33,10 @@ const LOCALE_COLUMN_MAP: Record<Locale, keyof Pick<Exercise, 'name_hu' | 'name_e
  * @param locale   - The current UI locale
  * @returns        - The resolved display name string
  */
-export function getExerciseDisplayName(exercise: Exercise, locale: Locale): string {
+export function getExerciseDisplayName(
+  exercise: Pick<Exercise, 'id' | 'name_hu' | 'name_en' | 'name_zh'>,
+  locale: Locale,
+): string {
   const fallbackOrder: Locale[] = [locale, 'hu', 'en', 'zh-TW']
 
   for (const fallbackLocale of fallbackOrder) {

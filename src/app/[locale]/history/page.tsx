@@ -1,11 +1,10 @@
 import { getTranslations } from 'next-intl/server'
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import { getWorkoutHistory } from '@/lib/actions/workout'
+import { getWorkoutHistory, type WorkoutHistoryEntry } from '@/lib/actions/workout'
 import { getExerciseDisplayName } from '@/lib/exercises'
-import type { Exercise, Locale } from '@/lib/exercises'
-import { Calendar, ChevronRight, Dumbbell } from 'lucide-react'
-import Link from 'next/link'
+import type { Locale } from '@/lib/exercises'
+import { Calendar, Dumbbell } from 'lucide-react'
 
 // This page uses authentication cookies — opt out of static prerendering
 export const instant = false
@@ -37,16 +36,17 @@ export default async function HistoryPage({ params }: PageProps<'/[locale]/histo
         </div>
       ) : (
         <div className="space-y-3">
-          {workouts.map((workout: any) => {
+          {workouts.map((workout: WorkoutHistoryEntry) => {
             const setCount: number = workout.workout_sets?.length ?? 0
             const exerciseIds: string[] = [
-              ...new Set<string>(workout.workout_sets?.map((s: any) => s.exercise_id as string) ?? []),
+              ...new Set(workout.workout_sets?.map((set) => set.exercise_id) ?? []),
             ]
             const exerciseNames: string[] = exerciseIds.slice(0, 3).map((id) => {
-              const set = workout.workout_sets?.find((s: any) => s.exercise_id === id)
-              const ex = set?.exercises
+              const set = workout.workout_sets?.find((item) => item.exercise_id === id)
+              const relatedExercises = set?.exercises
+              const ex = Array.isArray(relatedExercises) ? relatedExercises[0] : relatedExercises
               if (!ex) return id
-              return getExerciseDisplayName(ex as Exercise, locale as Locale)
+              return getExerciseDisplayName(ex, locale as Locale)
             })
 
             return (

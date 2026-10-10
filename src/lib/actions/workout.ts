@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
+import type { Exercise } from '@/lib/exercises'
 import { z } from 'zod'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -21,6 +22,25 @@ export interface SaveWorkoutInput {
   title?: string
   notes?: string
   sets: WorkoutSet[]
+}
+
+export type WorkoutHistoryExercise = Pick<
+  Exercise,
+  'id' | 'name_hu' | 'name_en' | 'name_zh' | 'category'
+>
+
+export interface WorkoutHistorySet extends WorkoutSet {
+  id: string
+  exercises: WorkoutHistoryExercise | WorkoutHistoryExercise[] | null
+}
+
+export interface WorkoutHistoryEntry {
+  id: string
+  date: string
+  title: string | null
+  notes: string | null
+  created_at: string
+  workout_sets: WorkoutHistorySet[]
 }
 
 // ─── Validation Schemas ──────────────────────────────────────────────────────
@@ -129,7 +149,7 @@ export async function getLastSetForExercise(
 /**
  * Fetches all workouts for the current user, ordered by date descending.
  */
-export async function getWorkoutHistory() {
+export async function getWorkoutHistory(): Promise<WorkoutHistoryEntry[]> {
   const supabase = await createClient()
 
   const { data: { user } } = await supabase.auth.getUser()

@@ -32,12 +32,18 @@ export default function LanguageSwitcher() {
         value={locale}
         onChange={(e) => handleChange(e.target.value as Locale)}
         aria-label={t('label')}
+        style={{ colorScheme: 'dark' }}
         className="bg-transparent text-sm font-medium text-foreground cursor-pointer
                    border-none outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1
                    rounded pr-1"
       >
         {LOCALES.map((loc) => (
-          <option key={loc.value} value={loc.value}>
+          <option
+            key={loc.value}
+            value={loc.value}
+            className="bg-zinc-900 text-white"
+            style={{ backgroundColor: '#18181b', color: '#ffffff' }}
+          >
             {loc.flag} {loc.label}
           </option>
         ))}
