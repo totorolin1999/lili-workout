@@ -57,18 +57,27 @@ export default function WorkoutLogger({ exercises }: WorkoutLoggerProps) {
   const [lastSessions, setLastSessions] = useState<Record<string, LastSession | null>>({})
   const [saveError, setSaveError] = useState<string | null>(null)
   const [saved, setSaved] = useState(false)
-
-  const today = new Date().toISOString().slice(0, 10)
+  const [today, setToday] = useState('')
 
   const form = useForm<WorkoutFormValues>({
     resolver: zodResolver(WorkoutFormSchema),
     defaultValues: {
-      date: today,
+      date: '',
       title: '',
       notes: '',
       exerciseGroups: [],
     },
   })
+
+  useEffect(() => {
+    const currentDate = new Date().toISOString().slice(0, 10)
+    setToday(currentDate)
+    form.setValue('date', currentDate, {
+      shouldDirty: false,
+      shouldTouch: false,
+      shouldValidate: false,
+    })
+  }, [form])
 
   const { fields: exerciseGroupFields, append: appendGroup, remove: removeGroup } = useFieldArray({
     control: form.control,

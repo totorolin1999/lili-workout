@@ -2,9 +2,9 @@ import { getTranslations } from 'next-intl/server'
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { getExercises } from '@/lib/actions/exercise'
+import CurrentDateLabel from '@/components/CurrentDateLabel'
 import WorkoutLogger from '@/components/WorkoutLogger'
 
-// This page uses authentication cookies — opt out of static prerendering
 export const instant = false
 
 export async function generateMetadata({ params }: PageProps<'/[locale]'>) {
@@ -29,13 +29,7 @@ export default async function HomePage({ params }: PageProps<'/[locale]'>) {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-bold text-foreground">{t('title')}</h1>
-        <span className="text-sm text-muted-foreground">
-          {new Date().toLocaleDateString(locale === 'zh-TW' ? 'zh-TW' : locale, {
-            weekday: 'long',
-            month: 'long',
-            day: 'numeric',
-          })}
-        </span>
+        <CurrentDateLabel locale={locale} />
       </div>
 
       <WorkoutLogger exercises={exercises} />
