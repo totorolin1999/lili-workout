@@ -274,11 +274,17 @@ function ExerciseGroupCard({
             onExerciseChange(e.target.value)
           }}
           className="flex-1 bg-transparent text-sm font-medium text-foreground
-                     focus:outline-none focus:ring-0 border-0"
+                     focus:outline-none focus:ring-0 border-0 cursor-pointer"
         >
-          <option value="">{t('selectExercise')}</option>
+          <option value="" className="bg-card text-foreground dark:bg-zinc-900 dark:text-zinc-100">
+            {t('selectExercise')}
+          </option>
           {exercises.map((ex) => (
-            <option key={ex.id} value={ex.id}>
+            <option
+              key={ex.id}
+              value={ex.id}
+              className="bg-card text-foreground dark:bg-zinc-900 dark:text-zinc-100"
+            >
               {getExerciseDisplayName(ex, locale)}
             </option>
           ))}

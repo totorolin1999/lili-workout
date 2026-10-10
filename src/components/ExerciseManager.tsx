@@ -176,7 +176,13 @@ export default function ExerciseManager({ exercises: initialExercises, locale }:
                          focus:outline-none focus:ring-2 focus:ring-primary"
             >
               {CATEGORIES.map((cat) => (
-                <option key={cat} value={cat}>{categoryLabel[cat]}</option>
+                <option
+                  key={cat}
+                  value={cat}
+                  className="bg-card text-foreground dark:bg-zinc-900 dark:text-zinc-100"
+                >
+                  {categoryLabel[cat]}
+                </option>
               ))}
             </select>
           </div>

@@ -86,6 +86,27 @@ input[type="submit"] {
   touch-action: manipulation;
 }
 
+select {
+  color-scheme: light dark;
+}
+
+select option {
+  background-color: var(--card);
+  color: var(--foreground);
+}
+
+@media (prefers-color-scheme: dark) {
+  select {
+    color-scheme: dark;
+  }
+
+  select option {
+    background-color: #141414;
+    color: #fafafa;
+  }
+}
+
+
 input[type="number"] {
   /* Remove spinner arrows on mobile WebKit */
   -moz-appearance: textfield;
