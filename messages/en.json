@@ -1,0 +1,129 @@
+{
+  "app": {
+    "name": "Workout Log",
+    "tagline": "Lili's Workout Tracker"
+  },
+  "nav": {
+    "home": "Home",
+    "exercises": "Exercises",
+    "history": "History",
+    "settings": "Settings",
+    "logout": "Logout"
+  },
+  "auth": {
+    "title": "Sign In",
+    "subtitle": "Enter your email and we'll send you a magic link.",
+    "emailLabel": "Email address",
+    "emailPlaceholder": "you@example.com",
+    "submitButton": "Send Magic Link",
+    "submitting": "Sending...",
+    "successTitle": "Check your email!",
+    "successMessage": "We've sent a sign-in link. Check your inbox (and spam folder).",
+    "errors": {
+      "invalidEmail": "Please enter a valid email address.",
+      "sendFailed": "Failed to send the link. Please try again."
+    }
+  },
+  "workout": {
+    "title": "Today's Workout",
+    "newWorkout": "New Workout",
+    "addExercise": "Add Exercise",
+    "addSet": "Add Set",
+    "finishWorkout": "Finish Workout",
+    "saveWorkout": "Save",
+    "cancelWorkout": "Cancel",
+    "deleteWorkout": "Delete",
+    "editWorkout": "Edit",
+    "noWorkout": "No active workout. Start a new one!",
+    "workoutSaved": "Workout saved!",
+    "workoutDate": "Workout date",
+    "workoutTitle": "Workout title (optional)",
+    "workoutNotes": "Notes",
+    "selectExercise": "Select exercise...",
+    "lastSession": "Last time",
+    "kg": "kg",
+    "reps": "Reps",
+    "sets": "Sets",
+    "set": "Set",
+    "weight": "Weight [kg]",
+    "restTime": "Rest time",
+    "notes": "Notes",
+    "rpe": "RPE",
+    "completed": "Done",
+    "deleteSet": "Delete",
+    "noExercises": "No exercises added yet.",
+    "errors": {
+      "weightRequired": "Please enter the weight.",
+      "repsRequired": "Please enter the reps.",
+      "exerciseRequired": "Please select an exercise.",
+      "saveFailed": "Failed to save the workout."
+    }
+  },
+  "exercises": {
+    "title": "Exercise Library",
+    "newExercise": "New Exercise",
+    "editExercise": "Edit",
+    "deleteExercise": "Delete",
+    "nameLabel": "Exercise name (in English)",
+    "namePlaceholder": "e.g. Push-up",
+    "optionalTranslations": "Optional Translations",
+    "nameEnLabel": "Name (English)",
+    "nameZhLabel": "Name (Chinese)",
+    "categoryLabel": "Category",
+    "selectCategory": "Select category...",
+    "save": "Save",
+    "cancel": "Cancel",
+    "confirmDelete": "Are you sure you want to delete this exercise?",
+    "noExercises": "No exercises yet. Add one!",
+    "categories": {
+      "legs": "Legs",
+      "chest": "Chest",
+      "back": "Back",
+      "shoulders": "Shoulders",
+      "arms": "Arms",
+      "core": "Core",
+      "cardio": "Cardio",
+      "other": "Other"
+    },
+    "errors": {
+      "nameRequired": "Please enter the exercise name.",
+      "categoryRequired": "Please select a category.",
+      "saveFailed": "Failed to save the exercise.",
+      "deleteFailed": "Failed to delete the exercise."
+    }
+  },
+  "history": {
+    "title": "Workout History",
+    "noHistory": "No workout history yet. Start training!",
+    "sets": "sets",
+    "viewDetails": "View Details",
+    "deleteWorkout": "Delete"
+  },
+  "restTimer": {
+    "title": "Rest Timer",
+    "start": "Start",
+    "pause": "Pause",
+    "reset": "Reset",
+    "skip": "Skip",
+    "finished": "Rest over!",
+    "seconds": "s"
+  },
+  "language": {
+    "label": "Language",
+    "hu": "Magyar",
+    "en": "English",
+    "zhTW": "繁體中文"
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "An error occurred.",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "close": "Close",
+    "confirm": "Confirm",
+    "yes": "Yes",
+    "no": "No"
+  }
+}

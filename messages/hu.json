@@ -1,0 +1,129 @@
+{
+  "app": {
+    "name": "Edzésnapló",
+    "tagline": "Lili edzésnapló alkalmazása"
+  },
+  "nav": {
+    "home": "Főoldal",
+    "exercises": "Gyakorlatok",
+    "history": "Előzmények",
+    "settings": "Beállítások",
+    "logout": "Kijelentkezés"
+  },
+  "auth": {
+    "title": "Bejelentkezés",
+    "subtitle": "Add meg az e-mail címedet, és küldünk egy belépési linket.",
+    "emailLabel": "E-mail cím",
+    "emailPlaceholder": "neved@pelda.hu",
+    "submitButton": "Belépési link küldése",
+    "submitting": "Küldés...",
+    "successTitle": "Ellenőrizd az e-mailodet!",
+    "successMessage": "Elküldtük a belépési linket. Nézd meg a beérkező üzeneteket (és a spam mappát).",
+    "errors": {
+      "invalidEmail": "Érvénytelen e-mail cím.",
+      "sendFailed": "Nem sikerült elküldeni a linket. Próbáld újra."
+    }
+  },
+  "workout": {
+    "title": "Mai edzés",
+    "newWorkout": "Új edzés",
+    "addExercise": "Gyakorlat hozzáadása",
+    "addSet": "Sorozat hozzáadása",
+    "finishWorkout": "Edzés befejezése",
+    "saveWorkout": "Mentés",
+    "cancelWorkout": "Mégse",
+    "deleteWorkout": "Törlés",
+    "editWorkout": "Szerkesztés",
+    "noWorkout": "Nincs aktív edzés. Kezdj egy újat!",
+    "workoutSaved": "Edzés elmentve!",
+    "workoutDate": "Edzés dátuma",
+    "workoutTitle": "Edzés neve (opcionális)",
+    "workoutNotes": "Megjegyzések",
+    "selectExercise": "Válassz gyakorlatot...",
+    "lastSession": "Legutóbb",
+    "kg": "kg",
+    "reps": "Ismétlés",
+    "sets": "Sorozat",
+    "set": "Sor",
+    "weight": "Súly [kg]",
+    "restTime": "Pihenőidő",
+    "notes": "Jegyzet",
+    "rpe": "RPE",
+    "completed": "Kész",
+    "deleteSet": "Törlés",
+    "noExercises": "Még nincsenek gyakorlatok hozzáadva.",
+    "errors": {
+      "weightRequired": "Add meg a súlyt.",
+      "repsRequired": "Add meg az ismétlések számát.",
+      "exerciseRequired": "Válassz egy gyakorlatot.",
+      "saveFailed": "Nem sikerült menteni az edzést."
+    }
+  },
+  "exercises": {
+    "title": "Gyakorlattár",
+    "newExercise": "Új gyakorlat",
+    "editExercise": "Szerkesztés",
+    "deleteExercise": "Törlés",
+    "nameLabel": "Gyakorlat neve (magyarul)",
+    "namePlaceholder": "pl. Fekvőtámasz",
+    "optionalTranslations": "Opcionális fordítások",
+    "nameEnLabel": "Név (angolul)",
+    "nameZhLabel": "Név (kínai)",
+    "categoryLabel": "Kategória",
+    "selectCategory": "Válassz kategóriát...",
+    "save": "Mentés",
+    "cancel": "Mégse",
+    "confirmDelete": "Biztosan törölni szeretnéd ezt a gyakorlatot?",
+    "noExercises": "Még nincsenek gyakorlatok. Adj hozzá egyet!",
+    "categories": {
+      "legs": "Láb",
+      "chest": "Mell",
+      "back": "Hát",
+      "shoulders": "Váll",
+      "arms": "Kar",
+      "core": "Törzs",
+      "cardio": "Kardió",
+      "other": "Egyéb"
+    },
+    "errors": {
+      "nameRequired": "Add meg a gyakorlat nevét.",
+      "categoryRequired": "Válassz kategóriát.",
+      "saveFailed": "Nem sikerült menteni a gyakorlatot.",
+      "deleteFailed": "Nem sikerült törölni a gyakorlatot."
+    }
+  },
+  "history": {
+    "title": "Edzés előzmények",
+    "noHistory": "Még nincs edzésnapló. Kezdj el edzeni!",
+    "sets": "sorozat",
+    "viewDetails": "Részletek",
+    "deleteWorkout": "Törlés"
+  },
+  "restTimer": {
+    "title": "Pihenőidő",
+    "start": "Indítás",
+    "pause": "Szünet",
+    "reset": "Visszaállítás",
+    "skip": "Kihagyás",
+    "finished": "Pihenő vége!",
+    "seconds": "mp"
+  },
+  "language": {
+    "label": "Nyelv",
+    "hu": "Magyar",
+    "en": "English",
+    "zhTW": "繁體中文"
+  },
+  "common": {
+    "loading": "Betöltés...",
+    "error": "Hiba történt.",
+    "save": "Mentés",
+    "cancel": "Mégse",
+    "delete": "Törlés",
+    "edit": "Szerkesztés",
+    "close": "Bezárás",
+    "confirm": "Megerősítés",
+    "yes": "Igen",
+    "no": "Nem"
+  }
+}

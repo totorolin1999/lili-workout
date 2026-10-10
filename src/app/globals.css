@@ -1,26 +1,105 @@
 @import "tailwindcss";
 
+/* ─── Design Tokens ──────────────────────────────────────────────────────── */
 :root {
+  /* Backgrounds */
   --background: #ffffff;
-  --foreground: #171717;
+  --foreground: #0f0f0f;
+  --card: #f8f8f8;
+  --muted: #f1f1f1;
+  --accent: #e8e8e8;
+
+  /* Borders */
+  --border: #e0e0e0;
+
+  /* Primary — violet (workout energy)  */
+  --primary: #7c3aed;
+  --primary-foreground: #ffffff;
+
+  /* Destructive */
+  --destructive: #dc2626;
+  --destructive-foreground: #ffffff;
+
+  /* Text */
+  --muted-foreground: #737373;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-card: var(--card);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-border: var(--border);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-muted-foreground: var(--muted-foreground);
+  --font-sans: var(--font-geist), ui-sans-serif, system-ui, sans-serif;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #0a0a0a;
-    --foreground: #ededed;
+    --foreground: #fafafa;
+    --card: #141414;
+    --muted: #1a1a1a;
+    --accent: #2a2a2a;
+    --border: #2e2e2e;
+    --primary: #9b5fff;
+    --primary-foreground: #ffffff;
+    --muted-foreground: #a3a3a3;
   }
+}
+
+/* ─── Base Styles ─────────────────────────────────────────────────────────── */
+html {
+  /* Smooth scroll & safe area for iOS notch */
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
+  /* Prevent horizontal scroll on mobile */
+  overflow-x: hidden;
+  /* Support iOS safe areas */
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* ─── Touch optimizations ─────────────────────────────────────────────────── */
+button,
+[role="button"],
+select,
+input[type="submit"] {
+  /* Minimum 44px touch target per WCAG */
+  min-height: 44px;
+  /* Prevent tap highlight flash on Android */
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+input[type="number"] {
+  /* Remove spinner arrows on mobile WebKit */
+  -moz-appearance: textfield;
+}
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* ─── Scrollbar ────────────────────────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 2px;
 }

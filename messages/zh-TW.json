@@ -1,0 +1,129 @@
+{
+  "app": {
+    "name": "運動日誌",
+    "tagline": "Lili 的健身記錄應用程式"
+  },
+  "nav": {
+    "home": "首頁",
+    "exercises": "動作庫",
+    "history": "訓練記錄",
+    "settings": "設定",
+    "logout": "登出"
+  },
+  "auth": {
+    "title": "登入",
+    "subtitle": "輸入您的電子郵件，我們將發送魔法連結給您。",
+    "emailLabel": "電子郵件地址",
+    "emailPlaceholder": "you@example.com",
+    "submitButton": "發送登入連結",
+    "submitting": "發送中...",
+    "successTitle": "請查看您的電子郵件！",
+    "successMessage": "我們已發送登入連結。請查看收件匣（和垃圾郵件資料夾）。",
+    "errors": {
+      "invalidEmail": "請輸入有效的電子郵件地址。",
+      "sendFailed": "發送連結失敗，請再試一次。"
+    }
+  },
+  "workout": {
+    "title": "今日訓練",
+    "newWorkout": "新增訓練",
+    "addExercise": "新增動作",
+    "addSet": "新增組數",
+    "finishWorkout": "完成訓練",
+    "saveWorkout": "儲存",
+    "cancelWorkout": "取消",
+    "deleteWorkout": "刪除",
+    "editWorkout": "編輯",
+    "noWorkout": "尚無進行中的訓練。開始新的訓練！",
+    "workoutSaved": "訓練已儲存！",
+    "workoutDate": "訓練日期",
+    "workoutTitle": "訓練名稱（選填）",
+    "workoutNotes": "備注",
+    "selectExercise": "選擇動作...",
+    "lastSession": "上次",
+    "kg": "公斤",
+    "reps": "次數",
+    "sets": "組數",
+    "set": "組",
+    "weight": "重量 [公斤]",
+    "restTime": "休息時間",
+    "notes": "備注",
+    "rpe": "主觀費力感",
+    "completed": "完成",
+    "deleteSet": "刪除",
+    "noExercises": "尚未新增動作。",
+    "errors": {
+      "weightRequired": "請輸入重量。",
+      "repsRequired": "請輸入次數。",
+      "exerciseRequired": "請選擇動作。",
+      "saveFailed": "儲存訓練失敗。"
+    }
+  },
+  "exercises": {
+    "title": "動作庫",
+    "newExercise": "新增動作",
+    "editExercise": "編輯",
+    "deleteExercise": "刪除",
+    "nameLabel": "動作名稱（中文）",
+    "namePlaceholder": "例：伏地挺身",
+    "optionalTranslations": "選填翻譯",
+    "nameEnLabel": "名稱（英文）",
+    "nameZhLabel": "名稱（中文）",
+    "categoryLabel": "分類",
+    "selectCategory": "選擇分類...",
+    "save": "儲存",
+    "cancel": "取消",
+    "confirmDelete": "確定要刪除此動作嗎？",
+    "noExercises": "尚無動作，請新增一個！",
+    "categories": {
+      "legs": "腿部",
+      "chest": "胸部",
+      "back": "背部",
+      "shoulders": "肩部",
+      "arms": "手臂",
+      "core": "核心",
+      "cardio": "有氧",
+      "other": "其他"
+    },
+    "errors": {
+      "nameRequired": "請輸入動作名稱。",
+      "categoryRequired": "請選擇分類。",
+      "saveFailed": "儲存動作失敗。",
+      "deleteFailed": "刪除動作失敗。"
+    }
+  },
+  "history": {
+    "title": "訓練記錄",
+    "noHistory": "尚無訓練記錄。開始訓練吧！",
+    "sets": "組",
+    "viewDetails": "查看詳情",
+    "deleteWorkout": "刪除"
+  },
+  "restTimer": {
+    "title": "休息計時器",
+    "start": "開始",
+    "pause": "暫停",
+    "reset": "重置",
+    "skip": "跳過",
+    "finished": "休息結束！",
+    "seconds": "秒"
+  },
+  "language": {
+    "label": "語言",
+    "hu": "Magyar",
+    "en": "English",
+    "zhTW": "繁體中文"
+  },
+  "common": {
+    "loading": "載入中...",
+    "error": "發生錯誤。",
+    "save": "儲存",
+    "cancel": "取消",
+    "delete": "刪除",
+    "edit": "編輯",
+    "close": "關閉",
+    "confirm": "確認",
+    "yes": "是",
+    "no": "否"
+  }
+}
