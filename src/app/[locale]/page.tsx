@@ -1,3 +1,4 @@
+import { connection } from 'next/server'
 import { getTranslations } from 'next-intl/server'
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
@@ -5,7 +6,6 @@ import { getExercises } from '@/lib/actions/exercise'
 import CurrentDateLabel from '@/components/CurrentDateLabel'
 import WorkoutLogger from '@/components/WorkoutLogger'
 
-export const instant = false
 
 export async function generateMetadata({ params }: PageProps<'/[locale]'>) {
   const { locale } = await params
@@ -14,6 +14,7 @@ export async function generateMetadata({ params }: PageProps<'/[locale]'>) {
 }
 
 export default async function HomePage({ params }: PageProps<'/[locale]'>) {
+  await connection()
   const { locale } = await params
   const supabase = await createClient()
 

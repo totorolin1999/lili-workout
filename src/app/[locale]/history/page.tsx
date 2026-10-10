@@ -6,8 +6,6 @@ import { getExerciseDisplayName } from '@/lib/exercises'
 import type { Locale } from '@/lib/exercises'
 import { Calendar, Dumbbell } from 'lucide-react'
 
-// This page uses authentication cookies — opt out of static prerendering
-export const instant = false
 
 export async function generateMetadata({ params }: PageProps<'/[locale]/history'>) {
   const { locale } = await params

@@ -4,8 +4,6 @@ import { redirect } from 'next/navigation'
 import LoginForm from '@/components/LoginForm'
 import LanguageSwitcher from '@/components/LanguageSwitcher'
 
-// Auth page uses cookies to check session — opt out of static prerendering
-export const instant = false
 
 export async function generateMetadata({ params }: PageProps<'/[locale]/login'>) {
   const { locale } = await params

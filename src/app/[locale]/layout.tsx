@@ -3,13 +3,10 @@ import { getMessages } from 'next-intl/server'
 import { notFound } from 'next/navigation'
 import { routing } from '@/i18n/routing'
 import { createClient } from '@/lib/supabase/server'
-import { redirect } from 'next/navigation'
 import LanguageSwitcher from '@/components/LanguageSwitcher'
 import Link from 'next/link'
 import { Dumbbell, History, BookOpen, LogOut } from 'lucide-react'
 
-// Layout reads cookies for auth state display — opt out of static prerendering
-export const instant = false
 
 export function generateStaticParams() {
   return routing.locales.map((locale) => ({ locale }))

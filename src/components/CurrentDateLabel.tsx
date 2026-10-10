@@ -1,23 +1,24 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useSyncExternalStore } from 'react'
 
 interface CurrentDateLabelProps {
   locale: string
 }
 
-export default function CurrentDateLabel({ locale }: CurrentDateLabelProps) {
-  const [formattedDate, setFormattedDate] = useState('')
+const emptySubscribe = () => () => {}
 
-  useEffect(() => {
-    setFormattedDate(
+export default function CurrentDateLabel({ locale }: CurrentDateLabelProps) {
+  const formattedDate = useSyncExternalStore(
+    emptySubscribe,
+    () =>
       new Date().toLocaleDateString(locale === 'zh-TW' ? 'zh-TW' : locale, {
         weekday: 'long',
         month: 'long',
         day: 'numeric',
       }),
-    )
-  }, [locale])
+    () => '',
+  )
 
   return <span className="text-sm text-muted-foreground">{formattedDate}</span>
 }

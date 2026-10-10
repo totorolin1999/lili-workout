@@ -2,12 +2,9 @@ import { getTranslations } from 'next-intl/server'
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { getExercises } from '@/lib/actions/exercise'
-import { getExerciseDisplayName } from '@/lib/exercises'
 import type { Locale } from '@/lib/exercises'
 import ExerciseManager from '@/components/ExerciseManager'
 
-// This page uses authentication cookies — opt out of static prerendering
-export const instant = false
 
 export async function generateMetadata({ params }: PageProps<'/[locale]/exercises'>) {
   const { locale } = await params

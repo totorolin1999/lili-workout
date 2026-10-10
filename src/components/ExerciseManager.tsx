@@ -6,7 +6,6 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useTranslations } from 'next-intl'
 import { Plus, ChevronDown, ChevronUp, Pencil, Trash2, Dumbbell } from 'lucide-react'
-import { cn } from '@/lib/utils'
 import { getExerciseDisplayName, getPrimaryNameField, type Exercise, type Locale } from '@/lib/exercises'
 import { createExercise, updateExercise, deleteExercise } from '@/lib/actions/exercise'
 
