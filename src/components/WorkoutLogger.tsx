@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState, useTransition } from 'react'
-import { useForm, useFieldArray, Controller } from 'react-hook-form'
+import { useForm, useFieldArray, Controller, type FieldErrors } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useTranslations, useLocale } from 'next-intl'
@@ -16,21 +16,21 @@ import RestTimer from './RestTimer'
 // ─── Types & Schema ──────────────────────────────────────────────────────────
 
 const SetSchema = z.object({
-  exercise_id: z.string().min(1, 'Required'),
+  exercise_id: z.string().optional(),
   set_number: z.number().int().positive(),
-  weight_kg: z.coerce.number().nonnegative({ message: 'weightRequired' }),
-  reps: z.coerce.number().int().positive({ message: 'repsRequired' }),
+  weight_kg: z.coerce.number().min(0, { message: 'weightRequired' }),
+  reps: z.coerce.number().int().min(1, { message: 'repsRequired' }),
   is_completed: z.boolean(),
-  rpe: z.coerce.number().min(1).max(10).nullable().optional(),
+  rpe: z.union([z.coerce.number().min(1).max(10), z.literal('')]).nullable().optional(),
 })
 
 const WorkoutFormSchema = z.object({
-  date: z.string(),
+  date: z.string().optional(),
   title: z.string().optional(),
   notes: z.string().optional(),
   exerciseGroups: z.array(
     z.object({
-      exercise_id: z.string().min(1),
+      exercise_id: z.string().min(1, { message: 'exerciseRequired' }),
       sets: z.array(SetSchema).min(1),
     }),
   ).min(1),
@@ -96,9 +96,10 @@ export default function WorkoutLogger({ exercises }: WorkoutLoggerProps) {
   // ─── Add exercise group ───────────────────────────────────────────────────
 
   function addExerciseGroup() {
+    setSaveError(null)
     appendGroup({
       exercise_id: '',
-      sets: [{ exercise_id: '', set_number: 1, weight_kg: 0, reps: 0, is_completed: false }],
+      sets: [{ exercise_id: '', set_number: 1, weight_kg: 0, reps: 10, is_completed: false }],
     })
   }
 
@@ -111,24 +112,49 @@ export default function WorkoutLogger({ exercises }: WorkoutLoggerProps) {
         group.sets.map((s) => ({
           ...s,
           exercise_id: group.exercise_id,
+          rpe: s.rpe ? Number(s.rpe) : null,
         })),
       )
 
       const result = await saveWorkout({
-        date: values.date,
+        date: values.date || today || new Date().toISOString().slice(0, 10),
         title: values.title || undefined,
         notes: values.notes || undefined,
         sets: flatSets,
       })
 
       if ('error' in result) {
-        setSaveError(result.error)
+        setSaveError(`${t('errors.saveFailed')}: ${result.error}`)
       } else {
         setSaved(true)
         form.reset({ date: today, title: '', notes: '', exerciseGroups: [] })
         setTimeout(() => setSaved(false), 3000)
       }
     })
+  }
+
+  function onInvalid(errors: FieldErrors<WorkoutFormValues>) {
+    console.warn('Workout form validation errors:', errors)
+    const hasExerciseError = errors.exerciseGroups?.some?.((g) => g?.exercise_id)
+    if (hasExerciseError) {
+      setSaveError(t('errors.exerciseRequired'))
+      return
+    }
+    const hasRepsError = errors.exerciseGroups?.some?.((g) =>
+      g?.sets?.some?.((s) => s?.reps)
+    )
+    if (hasRepsError) {
+      setSaveError(t('errors.repsRequired'))
+      return
+    }
+    const hasWeightError = errors.exerciseGroups?.some?.((g) =>
+      g?.sets?.some?.((s) => s?.weight_kg)
+    )
+    if (hasWeightError) {
+      setSaveError(t('errors.weightRequired'))
+      return
+    }
+    setSaveError(t('errors.saveFailed'))
   }
 
   const watchedGroups = form.watch('exerciseGroups')
@@ -199,7 +225,7 @@ export default function WorkoutLogger({ exercises }: WorkoutLoggerProps) {
 
       {/* Save error */}
       {saveError && (
-        <p className="text-sm text-destructive text-center">{t('errors.saveFailed')}: {saveError}</p>
+        <p className="text-sm text-destructive text-center">{saveError}</p>
       )}
       {saved && (
         <p className="text-sm text-green-600 text-center font-medium">{t('workoutSaved')}</p>
@@ -208,7 +234,7 @@ export default function WorkoutLogger({ exercises }: WorkoutLoggerProps) {
       {/* Save button */}
       <button
         type="button"
-        onClick={form.handleSubmit(onSubmit)}
+        onClick={form.handleSubmit(onSubmit, onInvalid)}
         disabled={isPending || exerciseGroupFields.length === 0}
         className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl
                    bg-primary text-primary-foreground font-semibold text-base
@@ -252,13 +278,17 @@ function ExerciseGroupCard({
   })
 
   const selectedExerciseId = form.watch(`exerciseGroups.${groupIdx}.exercise_id`)
+  const registerExercise = form.register(`exerciseGroups.${groupIdx}.exercise_id`)
+  const groupErrors = form.formState.errors.exerciseGroups?.[groupIdx]
 
   function addSet() {
+    const currentSets = form.getValues(`exerciseGroups.${groupIdx}.sets`) || []
+    const lastSet = currentSets[currentSets.length - 1]
     appendSet({
-      exercise_id: selectedExerciseId,
+      exercise_id: selectedExerciseId || '',
       set_number: setFields.length + 1,
-      weight_kg: lastSession?.weight_kg ?? 0,
-      reps: lastSession?.reps ?? 0,
+      weight_kg: lastSet?.weight_kg ?? lastSession?.weight_kg ?? 0,
+      reps: lastSet?.reps ?? lastSession?.reps ?? 10,
       is_completed: false,
     })
   }
@@ -267,28 +297,36 @@ function ExerciseGroupCard({
     <div className="rounded-2xl border border-border bg-card overflow-hidden">
       {/* Group header */}
       <div className="flex items-center gap-2 px-4 py-3 bg-muted/40">
-        <select
-          {...form.register(`exerciseGroups.${groupIdx}.exercise_id`)}
-          onChange={(e) => {
-            form.setValue(`exerciseGroups.${groupIdx}.exercise_id`, e.target.value)
-            onExerciseChange(e.target.value)
-          }}
-          className="flex-1 bg-transparent text-sm font-medium text-foreground
-                     focus:outline-none focus:ring-0 border-0 cursor-pointer"
-        >
-          <option value="" className="bg-card text-foreground dark:bg-zinc-900 dark:text-zinc-100">
-            {t('selectExercise')}
-          </option>
-          {exercises.map((ex) => (
-            <option
-              key={ex.id}
-              value={ex.id}
-              className="bg-card text-foreground dark:bg-zinc-900 dark:text-zinc-100"
-            >
-              {getExerciseDisplayName(ex, locale)}
+        <div className="flex-1">
+          <select
+            {...registerExercise}
+            onChange={(e) => {
+              registerExercise.onChange(e)
+              onExerciseChange(e.target.value)
+            }}
+            className={cn(
+              'w-full bg-transparent text-sm font-medium text-foreground',
+              'focus:outline-none focus:ring-0 border-0 cursor-pointer',
+              groupErrors?.exercise_id && 'text-destructive',
+            )}
+          >
+            <option value="" className="bg-card text-foreground dark:bg-zinc-900 dark:text-zinc-100">
+              {t('selectExercise')}
             </option>
-          ))}
-        </select>
+            {exercises.map((ex) => (
+              <option
+                key={ex.id}
+                value={ex.id}
+                className="bg-card text-foreground dark:bg-zinc-900 dark:text-zinc-100"
+              >
+                {getExerciseDisplayName(ex, locale)}
+              </option>
+            ))}
+          </select>
+          {groupErrors?.exercise_id && (
+            <p className="text-xs text-destructive mt-0.5">{t('errors.exerciseRequired')}</p>
+          )}
+        </div>
         <button
           type="button"
           onClick={() => setIsCollapsed((p) => !p)}
@@ -367,6 +405,7 @@ interface SetRowProps {
 
 function SetRow({ groupIdx, setIdx, form, t, onCompleted, onRemove }: SetRowProps) {
   const isCompleted = form.watch(`exerciseGroups.${groupIdx}.sets.${setIdx}.is_completed`)
+  const setErrors = form.formState.errors.exerciseGroups?.[groupIdx]?.sets?.[setIdx]
 
   function handleToggleComplete() {
     const next = !isCompleted
@@ -400,6 +439,7 @@ function SetRow({ groupIdx, setIdx, form, t, onCompleted, onRemove }: SetRowProp
             className={cn(
               'w-full rounded-lg border border-border bg-background px-2 py-1.5 text-sm text-center',
               'focus:outline-none focus:ring-2 focus:ring-primary',
+              setErrors?.weight_kg && 'border-destructive focus:ring-destructive',
               isCompleted && 'opacity-60',
             )}
           />
@@ -422,6 +462,7 @@ function SetRow({ groupIdx, setIdx, form, t, onCompleted, onRemove }: SetRowProp
             className={cn(
               'w-full rounded-lg border border-border bg-background px-2 py-1.5 text-sm text-center',
               'focus:outline-none focus:ring-2 focus:ring-primary',
+              setErrors?.reps && 'border-destructive focus:ring-destructive',
               isCompleted && 'opacity-60',
             )}
           />
