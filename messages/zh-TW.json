@@ -51,10 +51,7 @@
     "duration": "時間",
     "durationPlaceholder": "分:秒 (例 25:30)",
     "pace": "配速",
-    "restTime": "休息時間",
     "notes": "備注",
-    "rpe": "主觀費力感",
-    "completed": "完成",
     "deleteSet": "刪除",
     "noExercises": "尚未新增動作。",
     "errors": {
@@ -105,15 +102,6 @@
     "viewDetails": "查看詳情",
     "deleteWorkout": "刪除",
     "confirmDelete": "確定要刪除此訓練記錄嗎？"
-  },
-  "restTimer": {
-    "title": "休息計時器",
-    "start": "開始",
-    "pause": "暫停",
-    "reset": "重置",
-    "skip": "跳過",
-    "finished": "休息結束！",
-    "seconds": "秒"
   },
   "language": {
     "label": "語言",

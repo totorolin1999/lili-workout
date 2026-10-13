@@ -23,7 +23,6 @@ const SetSchema = z.object({
   distance_km: z.coerce.number().min(0).optional().nullable(),
   duration_seconds: z.coerce.number().int().min(0).optional().nullable(),
   duration_text: z.string().optional(),
-  is_completed: z.boolean(),
 })
 
 const WorkoutFormSchema = z.object({
@@ -111,7 +110,6 @@ export default function WorkoutLogger({ exercises }: WorkoutLoggerProps) {
           distance_km: null,
           duration_seconds: null,
           duration_text: '',
-          is_completed: true,
         },
       ],
     })
@@ -129,8 +127,16 @@ export default function WorkoutLogger({ exercises }: WorkoutLoggerProps) {
         return group.sets.map((s) => ({
           exercise_id: group.exercise_id,
           set_number: s.set_number,
-          weight_kg: isCardio ? 0 : Number(s.weight_kg ?? 0),
-          reps: isCardio ? 0 : Number(s.reps ?? 0),
+          weight_kg: isCardio
+            ? null
+            : s.weight_kg != null && s.weight_kg !== ('' as unknown)
+              ? Number(s.weight_kg)
+              : 0,
+          reps: isCardio
+            ? null
+            : s.reps != null && s.reps !== ('' as unknown)
+              ? Number(s.reps)
+              : 0,
           distance_km:
             isCardio && s.distance_km != null && s.distance_km !== ('' as unknown)
               ? Number(s.distance_km)
@@ -138,7 +144,6 @@ export default function WorkoutLogger({ exercises }: WorkoutLoggerProps) {
           duration_seconds: isCardio
             ? (s.duration_seconds ?? parseTimeToSeconds(s.duration_text))
             : null,
-          is_completed: true,
         }))
       })
 
@@ -318,12 +323,11 @@ function ExerciseGroupCard({
       appendSet({
         exercise_id: selectedExerciseId || '',
         set_number: setFields.length + 1,
-        weight_kg: 0,
-        reps: 0,
+        weight_kg: null,
+        reps: null,
         distance_km: lastSet?.distance_km ?? lastSession?.distance_km ?? null,
         duration_seconds: lastSet?.duration_seconds ?? lastSession?.duration_seconds ?? null,
         duration_text: lastSet?.duration_text ?? formatSecondsToTime(lastSession?.duration_seconds) ?? '',
-        is_completed: true,
       })
     } else {
       appendSet({
@@ -334,7 +338,6 @@ function ExerciseGroupCard({
         distance_km: null,
         duration_seconds: null,
         duration_text: '',
-        is_completed: true,
       })
     }
   }
@@ -355,7 +358,8 @@ function ExerciseGroupCard({
                 const currentSets = form.getValues(`exerciseGroups.${groupIdx}.sets`) || []
                 currentSets.forEach((s, idx) => {
                   if (s.reps === 10 && (s.weight_kg === 0 || !s.weight_kg)) {
-                    form.setValue(`exerciseGroups.${groupIdx}.sets.${idx}.reps`, 0)
+                    form.setValue(`exerciseGroups.${groupIdx}.sets.${idx}.reps`, null)
+                    form.setValue(`exerciseGroups.${groupIdx}.sets.${idx}.weight_kg`, null)
                   }
                 })
               }

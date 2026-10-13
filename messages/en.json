@@ -51,10 +51,7 @@
     "duration": "Duration",
     "durationPlaceholder": "mm:ss (e.g. 25:30)",
     "pace": "Pace",
-    "restTime": "Rest time",
     "notes": "Notes",
-    "rpe": "RPE",
-    "completed": "Done",
     "deleteSet": "Delete",
     "noExercises": "No exercises added yet.",
     "errors": {
@@ -105,15 +102,6 @@
     "viewDetails": "View Details",
     "deleteWorkout": "Delete",
     "confirmDelete": "Are you sure you want to delete this workout?"
-  },
-  "restTimer": {
-    "title": "Rest Timer",
-    "start": "Start",
-    "pause": "Pause",
-    "reset": "Reset",
-    "skip": "Skip",
-    "finished": "Rest over!",
-    "seconds": "s"
   },
   "language": {
     "label": "Language",

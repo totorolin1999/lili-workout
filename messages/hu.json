@@ -51,10 +51,7 @@
     "duration": "Idő",
     "durationPlaceholder": "pp:mp (pl. 25:30)",
     "pace": "Tempó",
-    "restTime": "Pihenőidő",
     "notes": "Jegyzet",
-    "rpe": "RPE",
-    "completed": "Kész",
     "deleteSet": "Törlés",
     "noExercises": "Még nincsenek gyakorlatok hozzáadva.",
     "errors": {
@@ -105,15 +102,6 @@
     "viewDetails": "Részletek",
     "deleteWorkout": "Törlés",
     "confirmDelete": "Biztosan törölni szeretnéd ezt az edzést?"
-  },
-  "restTimer": {
-    "title": "Pihenőidő",
-    "start": "Indítás",
-    "pause": "Szünet",
-    "reset": "Visszaállítás",
-    "skip": "Kihagyás",
-    "finished": "Pihenő vége!",
-    "seconds": "mp"
   },
   "language": {
     "label": "Nyelv",

@@ -15,8 +15,6 @@ export interface WorkoutSet {
   reps?: number | null
   distance_km?: number | null
   duration_seconds?: number | null
-  is_completed: boolean
-  rpe?: number | null
 }
 
 export interface SaveWorkoutInput {
@@ -51,11 +49,9 @@ const WorkoutSetSchema = z.object({
   exercise_id: z.string().uuid(),
   set_number: z.number().int().positive(),
   weight_kg: z.number().nonnegative().optional().nullable(),
-  reps: z.number().int().nonnegative().optional().nullable(),
+  reps: z.number().int().positive().optional().nullable(),
   distance_km: z.number().nonnegative().optional().nullable(),
   duration_seconds: z.number().int().nonnegative().optional().nullable(),
-  is_completed: z.boolean(),
-  rpe: z.number().min(1).max(10).nullable().optional(),
 })
 
 const SaveWorkoutSchema = z.object({
@@ -102,12 +98,10 @@ export async function saveWorkout(input: SaveWorkoutInput): Promise<{ id: string
     workout_id: workout.id,
     exercise_id: s.exercise_id,
     set_number: s.set_number,
-    weight_kg: s.weight_kg ?? 0,
-    reps: s.reps ?? 0,
+    weight_kg: s.weight_kg ?? null,
+    reps: s.reps ?? null,
     distance_km: s.distance_km ?? null,
     duration_seconds: s.duration_seconds ?? null,
-    is_completed: s.is_completed,
-    rpe: s.rpe ?? null,
   }))
 
   const { error: setsError } = await supabase.from('workout_sets').insert(setsToInsert)
@@ -157,7 +151,6 @@ export async function getLastSetForExercise(
     .select('weight_kg, reps, distance_km, duration_seconds, workouts!inner(user_id, date)')
     .eq('exercise_id', exerciseId)
     .eq('workouts.user_id', user.id)
-    .eq('is_completed', true)
     .order('workouts(date)', { ascending: false })
     .order('set_number', { ascending: false })
     .limit(1)
@@ -170,7 +163,6 @@ export async function getLastSetForExercise(
       .select('weight_kg, reps, workouts!inner(user_id, date)')
       .eq('exercise_id', exerciseId)
       .eq('workouts.user_id', user.id)
-      .eq('is_completed', true)
       .order('workouts(date)', { ascending: false })
       .order('set_number', { ascending: false })
       .limit(1)
@@ -220,8 +212,6 @@ export async function getWorkoutHistory(): Promise<WorkoutHistoryEntry[]> {
         reps,
         distance_km,
         duration_seconds,
-        is_completed,
-        rpe,
         exercises(id, name_hu, name_en, name_zh, category)
       )
     `)
@@ -244,8 +234,6 @@ export async function getWorkoutHistory(): Promise<WorkoutHistoryEntry[]> {
           set_number,
           weight_kg,
           reps,
-          is_completed,
-          rpe,
           exercises(id, name_hu, name_en, name_zh, category)
         )
       `)
