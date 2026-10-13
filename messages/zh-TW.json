@@ -100,8 +100,10 @@
     "noHistory": "尚無訓練記錄。開始訓練吧！",
     "sets": "組",
     "viewDetails": "查看詳情",
+    "editWorkout": "編輯",
     "deleteWorkout": "刪除",
-    "confirmDelete": "確定要刪除此訓練記錄嗎？"
+    "confirmDelete": "確定要刪除此訓練記錄嗎？",
+    "workoutUpdated": "訓練記錄已更新！"
   },
   "language": {
     "label": "語言",

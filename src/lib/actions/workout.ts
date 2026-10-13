@@ -267,3 +267,148 @@ export async function deleteWorkout(workoutId: string): Promise<{ error?: string
   revalidatePath('/[locale]/history', 'page')
   return {}
 }
+
+/**
+ * Updates an existing workout session and replaces its sets.
+ */
+export async function updateWorkout(
+  workoutId: string,
+  input: SaveWorkoutInput,
+): Promise<{ workout?: WorkoutHistoryEntry; error?: string }> {
+  const supabase = await createClient()
+
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+  if (authError || !user) {
+    return { error: 'Not authenticated' }
+  }
+
+  const parsed = SaveWorkoutSchema.safeParse(input)
+  if (!parsed.success) {
+    return { error: parsed.error.errors[0]?.message ?? 'Invalid input' }
+  }
+
+  const { date, title, notes, sets } = parsed.data
+
+  // Verify workout exists and belongs to user
+  const { data: existing, error: existError } = await supabase
+    .from('workouts')
+    .select('id')
+    .eq('id', workoutId)
+    .eq('user_id', user.id)
+    .maybeSingle()
+
+  if (existError || !existing) {
+    return { error: 'Workout not found' }
+  }
+
+  // Update the workout header
+  const { error: updateError } = await supabase
+    .from('workouts')
+    .update({
+      date,
+      title: title?.trim() || null,
+      notes: notes?.trim() || null,
+    })
+    .eq('id', workoutId)
+    .eq('user_id', user.id)
+
+  if (updateError) {
+    return { error: updateError.message }
+  }
+
+  // Replace sets: delete old sets
+  const { error: deleteSetsError } = await supabase
+    .from('workout_sets')
+    .delete()
+    .eq('workout_id', workoutId)
+
+  if (deleteSetsError) {
+    return { error: deleteSetsError.message }
+  }
+
+  // Insert new sets
+  const setsToInsert = sets.map((s, idx) => ({
+    workout_id: workoutId,
+    exercise_id: s.exercise_id,
+    set_number: s.set_number || idx + 1,
+    weight_kg: s.weight_kg ?? null,
+    reps: s.reps ?? null,
+    distance_km: s.distance_km ?? null,
+    duration_seconds: s.duration_seconds ?? null,
+  }))
+
+  const { error: setsError } = await supabase.from('workout_sets').insert(setsToInsert)
+
+  if (setsError) {
+    if (
+      setsError.message.includes('distance_km') ||
+      setsError.message.includes('duration_seconds') ||
+      setsError.message.includes('workout_sets_reps_check') ||
+      setsError.message.includes('schema cache')
+    ) {
+      return {
+        error:
+          '資料庫尚未更新有氧運動欄位，請先至 Supabase SQL Editor 執行 migration_cardio.sql。',
+      }
+    }
+    return { error: setsError.message }
+  }
+
+  revalidatePath('/[locale]/history', 'page')
+  revalidatePath('/[locale]', 'page')
+
+  // Fetch updated workout to return
+  const { data: updatedWorkout, error: fetchError } = await supabase
+    .from('workouts')
+    .select(`
+      id,
+      date,
+      title,
+      notes,
+      created_at,
+      workout_sets(
+        id,
+        exercise_id,
+        set_number,
+        weight_kg,
+        reps,
+        distance_km,
+        duration_seconds,
+        exercises(id, name_hu, name_en, name_zh, category)
+      )
+    `)
+    .eq('id', workoutId)
+    .eq('user_id', user.id)
+    .single()
+
+  if (fetchError || !updatedWorkout) {
+    const { data: fallbackData } = await supabase
+      .from('workouts')
+      .select(`
+        id,
+        date,
+        title,
+        notes,
+        created_at,
+        workout_sets(
+          id,
+          exercise_id,
+          set_number,
+          weight_kg,
+          reps,
+          exercises(id, name_hu, name_en, name_zh, category)
+        )
+      `)
+      .eq('id', workoutId)
+      .eq('user_id', user.id)
+      .single()
+
+    if (fallbackData) {
+      return { workout: fallbackData as unknown as WorkoutHistoryEntry }
+    }
+    return { error: fetchError?.message ?? 'Failed to retrieve updated workout' }
+  }
+
+  return { workout: updatedWorkout as unknown as WorkoutHistoryEntry }
+}
+

@@ -100,8 +100,10 @@
     "noHistory": "No workout history yet. Start training!",
     "sets": "sets",
     "viewDetails": "View Details",
+    "editWorkout": "Edit",
     "deleteWorkout": "Delete",
-    "confirmDelete": "Are you sure you want to delete this workout?"
+    "confirmDelete": "Are you sure you want to delete this workout?",
+    "workoutUpdated": "Workout updated!"
   },
   "language": {
     "label": "Language",

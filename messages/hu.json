@@ -100,8 +100,10 @@
     "noHistory": "Még nincs edzésnapló. Kezdj el edzeni!",
     "sets": "sorozat",
     "viewDetails": "Részletek",
+    "editWorkout": "Szerkesztés",
     "deleteWorkout": "Törlés",
-    "confirmDelete": "Biztosan törölni szeretnéd ezt az edzést?"
+    "confirmDelete": "Biztosan törölni szeretnéd ezt az edzést?",
+    "workoutUpdated": "Edzés frissítve!"
   },
   "language": {
     "label": "Nyelv",
