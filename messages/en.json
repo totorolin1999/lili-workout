@@ -99,7 +99,8 @@
     "noHistory": "No workout history yet. Start training!",
     "sets": "sets",
     "viewDetails": "View Details",
-    "deleteWorkout": "Delete"
+    "deleteWorkout": "Delete",
+    "confirmDelete": "Are you sure you want to delete this workout?"
   },
   "restTimer": {
     "title": "Rest Timer",

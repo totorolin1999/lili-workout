@@ -99,7 +99,8 @@
     "noHistory": "Még nincs edzésnapló. Kezdj el edzeni!",
     "sets": "sorozat",
     "viewDetails": "Részletek",
-    "deleteWorkout": "Törlés"
+    "deleteWorkout": "Törlés",
+    "confirmDelete": "Biztosan törölni szeretnéd ezt az edzést?"
   },
   "restTimer": {
     "title": "Pihenőidő",
