@@ -7,8 +7,6 @@ import {
   Dumbbell,
   ChevronDown,
   Trash2,
-  CheckCircle2,
-  Circle,
   FileText,
   Loader2,
 } from 'lucide-react'
@@ -19,6 +17,7 @@ import {
   type WorkoutHistoryEntry,
   type WorkoutHistorySet,
 } from '@/lib/actions/workout'
+import { formatSecondsToTime, calculatePace } from '@/lib/cardio'
 
 interface WorkoutHistoryListProps {
   initialWorkouts: WorkoutHistoryEntry[]
@@ -28,6 +27,7 @@ interface WorkoutHistoryListProps {
 interface ExerciseGroup {
   exerciseId: string
   exerciseName: string
+  category: string
   sets: WorkoutHistorySet[]
 }
 
@@ -46,9 +46,11 @@ function groupSetsByExercise(
       const exerciseName = ex
         ? getExerciseDisplayName(ex, locale)
         : set.exercise_id
+      const category = ex?.category ?? 'other'
       group = {
         exerciseId: set.exercise_id,
         exerciseName,
+        category,
         sets: [],
       }
       map.set(set.exercise_id, group)
@@ -231,47 +233,70 @@ export default function WorkoutHistoryList({
                         {/* Sets list */}
                         <div className="divide-y divide-border/60 text-xs">
                           {/* Table Header */}
-                          <div className="grid grid-cols-[2.5rem_1fr_1fr_auto_auto] items-center gap-2 px-3.5 py-2 font-medium text-muted-foreground bg-muted/10">
+                          <div className="grid grid-cols-[2.5rem_1fr_1fr] items-center gap-2 px-3.5 py-2 font-medium text-muted-foreground bg-muted/10">
                             <span>#</span>
-                            <span>{tWorkout('weight')}</span>
-                            <span>{tWorkout('reps')}</span>
-                            <span className="text-center min-w-[3.5rem]">RPE</span>
-                            <span className="w-5"></span>
+                            <span>{group.category === 'cardio' ? tWorkout('distance') : tWorkout('weight')}</span>
+                            <span>{group.category === 'cardio' ? tWorkout('duration') : tWorkout('reps')}</span>
                           </div>
 
                           {/* Set Rows */}
-                          {group.sets.map((set) => (
-                            <div
-                              key={set.id}
-                              className="grid grid-cols-[2.5rem_1fr_1fr_auto_auto] items-center gap-2 px-3.5 py-2.5 text-foreground"
-                            >
-                              <span className="font-medium text-muted-foreground">
-                                {set.set_number}
-                              </span>
-                              <span className="font-semibold">
-                                {set.weight_kg}{' '}
-                                <span className="font-normal text-muted-foreground text-[11px]">
-                                  kg
+                          {group.sets.map((set) => {
+                            const isCardio = group.category === 'cardio'
+                            const pace = isCardio ? calculatePace(set.distance_km, set.duration_seconds) : null
+
+                            return (
+                              <div
+                                key={set.id}
+                                className="grid grid-cols-[2.5rem_1fr_1fr] items-center gap-2 px-3.5 py-2.5 text-foreground"
+                              >
+                                <span className="font-medium text-muted-foreground">
+                                  {set.set_number}
                                 </span>
-                              </span>
-                              <span className="font-semibold">
-                                {set.reps}{' '}
-                                <span className="font-normal text-muted-foreground text-[11px]">
-                                  {tWorkout('reps')}
-                                </span>
-                              </span>
-                              <span className="text-center text-muted-foreground min-w-[3.5rem]">
-                                {set.rpe ? `${set.rpe}` : '-'}
-                              </span>
-                              <span className="flex items-center justify-center w-5">
-                                {set.is_completed ? (
-                                  <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                                {isCardio ? (
+                                  <span className="font-semibold">
+                                    {set.distance_km != null ? (
+                                      <>
+                                        {set.distance_km}{' '}
+                                        <span className="font-normal text-muted-foreground text-[11px]">
+                                          km
+                                        </span>
+                                      </>
+                                    ) : (
+                                      '-'
+                                    )}
+                                  </span>
                                 ) : (
-                                  <Circle className="h-4 w-4 text-muted-foreground/40" />
+                                  <span className="font-semibold">
+                                    {set.weight_kg}{' '}
+                                    <span className="font-normal text-muted-foreground text-[11px]">
+                                      kg
+                                    </span>
+                                  </span>
                                 )}
-                              </span>
-                            </div>
-                          ))}
+                                {isCardio ? (
+                                  <div className="flex flex-col">
+                                    <span className="font-semibold">
+                                      {set.duration_seconds != null
+                                        ? formatSecondsToTime(set.duration_seconds)
+                                        : '-'}
+                                    </span>
+                                    {pace && (
+                                      <span className="font-normal text-muted-foreground text-[10px]">
+                                        {pace}
+                                      </span>
+                                    )}
+                                  </div>
+                                ) : (
+                                  <span className="font-semibold">
+                                    {set.reps}{' '}
+                                    <span className="font-normal text-muted-foreground text-[11px]">
+                                      {tWorkout('reps')}
+                                    </span>
+                                  </span>
+                                )}
+                              </div>
+                            )
+                          })}
                         </div>
                       </div>
                     ))}

@@ -6,22 +6,24 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useTranslations, useLocale } from 'next-intl'
 import {
-  Plus, Trash2, CheckCircle2, Circle, ChevronDown, ChevronUp, Save
+  Plus, Trash2, ChevronDown, ChevronUp, Save
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { getExerciseDisplayName, type Exercise, type Locale } from '@/lib/exercises'
 import { saveWorkout, getLastSetForExercise } from '@/lib/actions/workout'
-import RestTimer from './RestTimer'
+import { formatSecondsToTime, parseTimeToSeconds, calculatePace } from '@/lib/cardio'
 
 // ─── Types & Schema ──────────────────────────────────────────────────────────
 
 const SetSchema = z.object({
   exercise_id: z.string().optional(),
   set_number: z.number().int().positive(),
-  weight_kg: z.coerce.number().min(0, { message: 'weightRequired' }),
-  reps: z.coerce.number().int().min(1, { message: 'repsRequired' }),
+  weight_kg: z.coerce.number().min(0).optional().nullable(),
+  reps: z.coerce.number().int().min(0).optional().nullable(),
+  distance_km: z.coerce.number().min(0).optional().nullable(),
+  duration_seconds: z.coerce.number().int().min(0).optional().nullable(),
+  duration_text: z.string().optional(),
   is_completed: z.boolean(),
-  rpe: z.union([z.coerce.number().min(1).max(10), z.literal('')]).nullable().optional(),
 })
 
 const WorkoutFormSchema = z.object({
@@ -43,8 +45,10 @@ interface WorkoutLoggerProps {
 }
 
 interface LastSession {
-  weight_kg: number
-  reps: number
+  weight_kg?: number | null
+  reps?: number | null
+  distance_km?: number | null
+  duration_seconds?: number | null
 }
 
 // ─── Component ───────────────────────────────────────────────────────────────
@@ -54,7 +58,6 @@ export default function WorkoutLogger({ exercises }: WorkoutLoggerProps) {
   const tCommon = useTranslations('common')
   const locale = useLocale() as Locale
   const [isPending, startTransition] = useTransition()
-  const [showTimer, setShowTimer] = useState(false)
   const [lastSessions, setLastSessions] = useState<Record<string, LastSession | null>>({})
   const [saveError, setSaveError] = useState<string | null>(null)
   const [saved, setSaved] = useState(false)
@@ -99,7 +102,18 @@ export default function WorkoutLogger({ exercises }: WorkoutLoggerProps) {
     setSaveError(null)
     appendGroup({
       exercise_id: '',
-      sets: [{ exercise_id: '', set_number: 1, weight_kg: 0, reps: 10, is_completed: false }],
+      sets: [
+        {
+          exercise_id: '',
+          set_number: 1,
+          weight_kg: 0,
+          reps: 10,
+          distance_km: null,
+          duration_seconds: null,
+          duration_text: '',
+          is_completed: true,
+        },
+      ],
     })
   }
 
@@ -108,13 +122,25 @@ export default function WorkoutLogger({ exercises }: WorkoutLoggerProps) {
   function onSubmit(values: WorkoutFormValues) {
     setSaveError(null)
     startTransition(async () => {
-      const flatSets = values.exerciseGroups.flatMap((group) =>
-        group.sets.map((s) => ({
-          ...s,
+      const flatSets = values.exerciseGroups.flatMap((group) => {
+        const ex = exercises.find((e) => e.id === group.exercise_id)
+        const isCardio = ex?.category === 'cardio'
+
+        return group.sets.map((s) => ({
           exercise_id: group.exercise_id,
-          rpe: s.rpe ? Number(s.rpe) : null,
-        })),
-      )
+          set_number: s.set_number,
+          weight_kg: isCardio ? 0 : Number(s.weight_kg ?? 0),
+          reps: isCardio ? 0 : Number(s.reps ?? 0),
+          distance_km:
+            isCardio && s.distance_km != null && s.distance_km !== ('' as unknown)
+              ? Number(s.distance_km)
+              : null,
+          duration_seconds: isCardio
+            ? (s.duration_seconds ?? parseTimeToSeconds(s.duration_text))
+            : null,
+          is_completed: true,
+        }))
+      })
 
       const result = await saveWorkout({
         date: values.date || today || new Date().toISOString().slice(0, 10),
@@ -140,16 +166,22 @@ export default function WorkoutLogger({ exercises }: WorkoutLoggerProps) {
       setSaveError(t('errors.exerciseRequired'))
       return
     }
-    const hasRepsError = errors.exerciseGroups?.some?.((g) =>
-      g?.sets?.some?.((s) => s?.reps)
-    )
+    const hasRepsError = errors.exerciseGroups?.some?.((g, gIdx) => {
+      const selectedId = form.getValues(`exerciseGroups.${gIdx}.exercise_id`)
+      const ex = exercises.find((e) => e.id === selectedId)
+      if (ex?.category === 'cardio') return false
+      return g?.sets?.some?.((s) => s?.reps)
+    })
     if (hasRepsError) {
       setSaveError(t('errors.repsRequired'))
       return
     }
-    const hasWeightError = errors.exerciseGroups?.some?.((g) =>
-      g?.sets?.some?.((s) => s?.weight_kg)
-    )
+    const hasWeightError = errors.exerciseGroups?.some?.((g, gIdx) => {
+      const selectedId = form.getValues(`exerciseGroups.${gIdx}.exercise_id`)
+      const ex = exercises.find((e) => e.id === selectedId)
+      if (ex?.category === 'cardio') return false
+      return g?.sets?.some?.((s) => s?.weight_kg)
+    })
     if (hasWeightError) {
       setSaveError(t('errors.weightRequired'))
       return
@@ -196,7 +228,6 @@ export default function WorkoutLogger({ exercises }: WorkoutLoggerProps) {
               lastSession={lastSessions[watchedGroups[groupIdx]?.exercise_id] ?? null}
               onExerciseChange={(id) => fetchLastSession(id)}
               onRemoveGroup={() => removeGroup(groupIdx)}
-              onSetCompleted={() => setShowTimer(true)}
             />
           ))}
         </div>
@@ -244,9 +275,6 @@ export default function WorkoutLogger({ exercises }: WorkoutLoggerProps) {
         <Save className="h-5 w-5" />
         {isPending ? t('saveWorkout') + '...' : t('finishWorkout')}
       </button>
-
-      {/* Rest Timer floating overlay */}
-      {showTimer && <RestTimer onClose={() => setShowTimer(false)} />}
     </div>
   )
 }
@@ -263,12 +291,11 @@ interface ExerciseGroupCardProps {
   lastSession: LastSession | null
   onExerciseChange: (id: string) => void
   onRemoveGroup: () => void
-  onSetCompleted: () => void
 }
 
 function ExerciseGroupCard({
   groupIdx, form, exercises, locale, t, tCommon, lastSession,
-  onExerciseChange, onRemoveGroup, onSetCompleted,
+  onExerciseChange, onRemoveGroup,
 }: ExerciseGroupCardProps) {
   const [isCollapsed, setIsCollapsed] = useState(false)
 
@@ -281,16 +308,35 @@ function ExerciseGroupCard({
   const registerExercise = form.register(`exerciseGroups.${groupIdx}.exercise_id`)
   const groupErrors = form.formState.errors.exerciseGroups?.[groupIdx]
 
+  const selectedExercise = exercises.find((ex) => ex.id === selectedExerciseId)
+  const isCardio = selectedExercise?.category === 'cardio'
+
   function addSet() {
     const currentSets = form.getValues(`exerciseGroups.${groupIdx}.sets`) || []
     const lastSet = currentSets[currentSets.length - 1]
-    appendSet({
-      exercise_id: selectedExerciseId || '',
-      set_number: setFields.length + 1,
-      weight_kg: lastSet?.weight_kg ?? lastSession?.weight_kg ?? 0,
-      reps: lastSet?.reps ?? lastSession?.reps ?? 10,
-      is_completed: false,
-    })
+    if (isCardio) {
+      appendSet({
+        exercise_id: selectedExerciseId || '',
+        set_number: setFields.length + 1,
+        weight_kg: 0,
+        reps: 0,
+        distance_km: lastSet?.distance_km ?? lastSession?.distance_km ?? null,
+        duration_seconds: lastSet?.duration_seconds ?? lastSession?.duration_seconds ?? null,
+        duration_text: lastSet?.duration_text ?? formatSecondsToTime(lastSession?.duration_seconds) ?? '',
+        is_completed: true,
+      })
+    } else {
+      appendSet({
+        exercise_id: selectedExerciseId || '',
+        set_number: setFields.length + 1,
+        weight_kg: lastSet?.weight_kg ?? lastSession?.weight_kg ?? 0,
+        reps: lastSet?.reps ?? lastSession?.reps ?? 10,
+        distance_km: null,
+        duration_seconds: null,
+        duration_text: '',
+        is_completed: true,
+      })
+    }
   }
 
   return (
@@ -302,7 +348,17 @@ function ExerciseGroupCard({
             {...registerExercise}
             onChange={(e) => {
               registerExercise.onChange(e)
-              onExerciseChange(e.target.value)
+              const newId = e.target.value
+              onExerciseChange(newId)
+              const ex = exercises.find((item) => item.id === newId)
+              if (ex?.category === 'cardio') {
+                const currentSets = form.getValues(`exerciseGroups.${groupIdx}.sets`) || []
+                currentSets.forEach((s, idx) => {
+                  if (s.reps === 10 && (s.weight_kg === 0 || !s.weight_kg)) {
+                    form.setValue(`exerciseGroups.${groupIdx}.sets.${idx}.reps`, 0)
+                  }
+                })
+              }
             }}
             className={cn(
               'w-full bg-transparent text-sm font-medium text-foreground',
@@ -348,7 +404,20 @@ function ExerciseGroupCard({
       {/* Last session hint */}
       {lastSession && !isCollapsed && (
         <div className="px-4 py-1.5 text-xs text-muted-foreground bg-primary/5 border-b border-border">
-          {t('lastSession')}: {lastSession.weight_kg}kg × {lastSession.reps} {t('reps')}
+          {isCardio ? (
+            <>
+              {t('lastSession')}: {lastSession.distance_km != null ? `${lastSession.distance_km} km` : ''}
+              {lastSession.distance_km != null && lastSession.duration_seconds != null ? ' • ' : ''}
+              {lastSession.duration_seconds != null ? formatSecondsToTime(lastSession.duration_seconds) : ''}
+              {calculatePace(lastSession.distance_km, lastSession.duration_seconds)
+                ? ` (${calculatePace(lastSession.distance_km, lastSession.duration_seconds)})`
+                : ''}
+            </>
+          ) : (
+            <>
+              {t('lastSession')}: {lastSession.weight_kg ?? 0}kg × {lastSession.reps ?? 0} {t('reps')}
+            </>
+          )}
         </div>
       )}
 
@@ -356,11 +425,10 @@ function ExerciseGroupCard({
       {!isCollapsed && (
         <div className="divide-y divide-border">
           {/* Column headers */}
-          <div className="grid grid-cols-[2rem_1fr_1fr_auto_auto] gap-2 px-4 py-2 text-xs font-medium text-muted-foreground">
+          <div className="grid grid-cols-[2rem_1fr_1fr_auto] gap-2 px-4 py-2 text-xs font-medium text-muted-foreground">
             <span>#</span>
-            <span>{t('weight')}</span>
-            <span>{t('reps')}</span>
-            <span className="text-center">RPE</span>
+            <span>{isCardio ? t('distance') : t('weight')}</span>
+            <span>{isCardio ? t('duration') : t('reps')}</span>
             <span></span>
           </div>
 
@@ -369,9 +437,9 @@ function ExerciseGroupCard({
               key={setField.id}
               groupIdx={groupIdx}
               setIdx={setIdx}
+              isCardio={Boolean(isCardio)}
               form={form}
               t={t}
-              onCompleted={onSetCompleted}
               onRemove={() => removeSet(setIdx)}
             />
           ))}
@@ -397,115 +465,154 @@ function ExerciseGroupCard({
 interface SetRowProps {
   groupIdx: number
   setIdx: number
+  isCardio: boolean
   form: ReturnType<typeof useForm<WorkoutFormValues>>
   t: ReturnType<typeof useTranslations<'workout'>>
-  onCompleted: () => void
   onRemove: () => void
 }
 
-function SetRow({ groupIdx, setIdx, form, t, onCompleted, onRemove }: SetRowProps) {
-  const isCompleted = form.watch(`exerciseGroups.${groupIdx}.sets.${setIdx}.is_completed`)
+function SetRow({ groupIdx, setIdx, isCardio, form, t, onRemove }: SetRowProps) {
   const setErrors = form.formState.errors.exerciseGroups?.[groupIdx]?.sets?.[setIdx]
 
-  function handleToggleComplete() {
-    const next = !isCompleted
-    form.setValue(`exerciseGroups.${groupIdx}.sets.${setIdx}.is_completed`, next)
-    if (next) onCompleted()
-  }
+  const distanceKm = form.watch(`exerciseGroups.${groupIdx}.sets.${setIdx}.distance_km`)
+  const durationSeconds = form.watch(`exerciseGroups.${groupIdx}.sets.${setIdx}.duration_seconds`)
+  const pace = isCardio ? calculatePace(distanceKm, durationSeconds) : null
 
   return (
-    <div className={cn(
-      'grid grid-cols-[2rem_1fr_1fr_auto_auto] gap-2 px-4 py-2 items-center transition-colors',
-      isCompleted && 'bg-green-50 dark:bg-green-950/20',
-    )}>
-      {/* Set number */}
-      <span className="text-xs font-semibold text-muted-foreground text-center">
-        {setIdx + 1}
-      </span>
+    <div>
+      <div className="grid grid-cols-[2rem_1fr_1fr_auto] gap-2 px-4 py-2 items-center">
+        {/* Set number */}
+        <span className="text-xs font-semibold text-muted-foreground text-center">
+          {setIdx + 1}
+        </span>
 
-      {/* Weight */}
-      <Controller
-        control={form.control}
-        name={`exerciseGroups.${groupIdx}.sets.${setIdx}.weight_kg`}
-        render={({ field }) => (
-          <input
-            {...field}
-            type="number"
-            inputMode="decimal"
-            step="0.5"
-            min="0"
-            placeholder="0"
-            aria-label={t('weight')}
-            className={cn(
-              'w-full rounded-lg border border-border bg-background px-2 py-1.5 text-sm text-center',
-              'focus:outline-none focus:ring-2 focus:ring-primary',
-              setErrors?.weight_kg && 'border-destructive focus:ring-destructive',
-              isCompleted && 'opacity-60',
-            )}
-          />
+        {isCardio ? (
+          <>
+            {/* Distance (km) */}
+            <Controller
+              control={form.control}
+              name={`exerciseGroups.${groupIdx}.sets.${setIdx}.distance_km`}
+              render={({ field }) => (
+                <input
+                  {...field}
+                  value={field.value ?? ''}
+                  onChange={(e) => {
+                    const val = e.target.value === '' ? '' : Number(e.target.value)
+                    field.onChange(val)
+                  }}
+                  type="number"
+                  inputMode="decimal"
+                  step="0.01"
+                  min="0"
+                  placeholder="0.0"
+                  aria-label={t('distance')}
+                  className={cn(
+                    'w-full rounded-lg border border-border bg-background px-2 py-1.5 text-sm text-center',
+                    'focus:outline-none focus:ring-2 focus:ring-primary',
+                    setErrors?.distance_km && 'border-destructive focus:ring-destructive',
+                  )}
+                />
+              )}
+            />
+
+            {/* Duration */}
+            <Controller
+              control={form.control}
+              name={`exerciseGroups.${groupIdx}.sets.${setIdx}.duration_text`}
+              render={({ field }) => (
+                <input
+                  {...field}
+                  value={field.value ?? ''}
+                  onChange={(e) => {
+                    const text = e.target.value
+                    field.onChange(text)
+                    const seconds = parseTimeToSeconds(text)
+                    form.setValue(
+                      `exerciseGroups.${groupIdx}.sets.${setIdx}.duration_seconds`,
+                      seconds,
+                    )
+                  }}
+                  onBlur={(e) => {
+                    const seconds = parseTimeToSeconds(e.target.value)
+                    if (seconds != null) {
+                      field.onChange(formatSecondsToTime(seconds))
+                      form.setValue(
+                        `exerciseGroups.${groupIdx}.sets.${setIdx}.duration_seconds`,
+                        seconds,
+                      )
+                    }
+                  }}
+                  type="text"
+                  placeholder={t('durationPlaceholder')}
+                  aria-label={t('duration')}
+                  className={cn(
+                    'w-full rounded-lg border border-border bg-background px-2 py-1.5 text-sm text-center',
+                    'focus:outline-none focus:ring-2 focus:ring-primary',
+                    setErrors?.duration_seconds && 'border-destructive focus:ring-destructive',
+                  )}
+                />
+              )}
+            />
+          </>
+        ) : (
+          <>
+            {/* Weight */}
+            <Controller
+              control={form.control}
+              name={`exerciseGroups.${groupIdx}.sets.${setIdx}.weight_kg`}
+              render={({ field }) => (
+                <input
+                  {...field}
+                  value={field.value ?? ''}
+                  onChange={(e) => {
+                    const val = e.target.value === '' ? '' : Number(e.target.value)
+                    field.onChange(val)
+                  }}
+                  type="number"
+                  inputMode="decimal"
+                  step="0.5"
+                  min="0"
+                  placeholder="0"
+                  aria-label={t('weight')}
+                  className={cn(
+                    'w-full rounded-lg border border-border bg-background px-2 py-1.5 text-sm text-center',
+                    'focus:outline-none focus:ring-2 focus:ring-primary',
+                    setErrors?.weight_kg && 'border-destructive focus:ring-destructive',
+                  )}
+                />
+              )}
+            />
+
+            {/* Reps */}
+            <Controller
+              control={form.control}
+              name={`exerciseGroups.${groupIdx}.sets.${setIdx}.reps`}
+              render={({ field }) => (
+                <input
+                  {...field}
+                  value={field.value ?? ''}
+                  onChange={(e) => {
+                    const val = e.target.value === '' ? '' : Number(e.target.value)
+                    field.onChange(val)
+                  }}
+                  type="number"
+                  inputMode="numeric"
+                  step="1"
+                  min="1"
+                  placeholder="0"
+                  aria-label={t('reps')}
+                  className={cn(
+                    'w-full rounded-lg border border-border bg-background px-2 py-1.5 text-sm text-center',
+                    'focus:outline-none focus:ring-2 focus:ring-primary',
+                    setErrors?.reps && 'border-destructive focus:ring-destructive',
+                  )}
+                />
+              )}
+            />
+          </>
         )}
-      />
 
-      {/* Reps */}
-      <Controller
-        control={form.control}
-        name={`exerciseGroups.${groupIdx}.sets.${setIdx}.reps`}
-        render={({ field }) => (
-          <input
-            {...field}
-            type="number"
-            inputMode="numeric"
-            step="1"
-            min="1"
-            placeholder="0"
-            aria-label={t('reps')}
-            className={cn(
-              'w-full rounded-lg border border-border bg-background px-2 py-1.5 text-sm text-center',
-              'focus:outline-none focus:ring-2 focus:ring-primary',
-              setErrors?.reps && 'border-destructive focus:ring-destructive',
-              isCompleted && 'opacity-60',
-            )}
-          />
-        )}
-      />
-
-      {/* RPE (optional) */}
-      <Controller
-        control={form.control}
-        name={`exerciseGroups.${groupIdx}.sets.${setIdx}.rpe`}
-        render={({ field }) => (
-          <input
-            {...field}
-            value={field.value ?? ''}
-            type="number"
-            inputMode="numeric"
-            step="1"
-            min="1"
-            max="10"
-            placeholder="—"
-            aria-label={t('rpe')}
-            className={cn(
-              'w-10 rounded-lg border border-border bg-background px-1 py-1.5 text-sm text-center',
-              'focus:outline-none focus:ring-2 focus:ring-primary',
-              isCompleted && 'opacity-60',
-            )}
-          />
-        )}
-      />
-
-      {/* Complete + Delete */}
-      <div className="flex items-center gap-1">
-        <button
-          type="button"
-          onClick={handleToggleComplete}
-          aria-label={t('completed')}
-          className="p-1 transition-colors"
-        >
-          {isCompleted
-            ? <CheckCircle2 className="h-5 w-5 text-green-500" />
-            : <Circle className="h-5 w-5 text-muted-foreground" />
-          }
-        </button>
+        {/* Delete */}
         <button
           type="button"
           onClick={onRemove}
@@ -515,6 +622,14 @@ function SetRow({ groupIdx, setIdx, form, t, onCompleted, onRemove }: SetRowProp
           <Trash2 className="h-3.5 w-3.5" />
         </button>
       </div>
+
+      {/* Live calculated pace display */}
+      {isCardio && pace && (
+        <div className="px-12 pb-2 text-[11px] text-muted-foreground flex items-center gap-1.5 font-medium">
+          <span className="text-primary">{t('pace')}:</span>
+          <span className="text-foreground font-semibold">{pace}</span>
+        </div>
+      )}
     </div>
   )
 }

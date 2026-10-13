@@ -93,15 +93,17 @@ CREATE POLICY "Users can delete own workouts"
 -- Individual sets logged within a workout.
 -- ─────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS workout_sets (
-  id            UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  workout_id    UUID NOT NULL REFERENCES workouts(id) ON DELETE CASCADE,
-  exercise_id   UUID NOT NULL REFERENCES exercises(id) ON DELETE RESTRICT,
-  set_number    INTEGER NOT NULL CHECK (set_number > 0),
-  weight_kg     NUMERIC(6,2) NOT NULL DEFAULT 0 CHECK (weight_kg >= 0),
-  reps          INTEGER NOT NULL CHECK (reps > 0),
-  is_completed  BOOLEAN NOT NULL DEFAULT FALSE,
-  rpe           NUMERIC(3,1) CHECK (rpe >= 1 AND rpe <= 10),
-  created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+  id                UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  workout_id        UUID NOT NULL REFERENCES workouts(id) ON DELETE CASCADE,
+  exercise_id       UUID NOT NULL REFERENCES exercises(id) ON DELETE RESTRICT,
+  set_number        INTEGER NOT NULL CHECK (set_number > 0),
+  weight_kg         NUMERIC(6,2) NOT NULL DEFAULT 0 CHECK (weight_kg >= 0),
+  reps              INTEGER CHECK (reps IS NULL OR reps >= 0),
+  distance_km       NUMERIC(6,2) CHECK (distance_km IS NULL OR distance_km >= 0),
+  duration_seconds  INTEGER CHECK (duration_seconds IS NULL OR duration_seconds >= 0),
+  is_completed      BOOLEAN NOT NULL DEFAULT FALSE,
+  rpe               NUMERIC(3,1) CHECK (rpe >= 1 AND rpe <= 10),
+  created_at        TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE INDEX IF NOT EXISTS idx_workout_sets_workout ON workout_sets (workout_id);
