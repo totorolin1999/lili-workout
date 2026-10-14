@@ -41,6 +41,9 @@
     "workoutTitle": "Edzés neve (opcionális)",
     "workoutNotes": "Megjegyzések",
     "selectExercise": "Válassz gyakorlatot...",
+    "searchExercise": "Gyakorlat keresése...",
+    "allCategories": "Mind",
+    "noExercisesFound": "Nem található gyakorlat",
     "lastSession": "Legutóbb",
     "kg": "kg",
     "reps": "Ismétlés",
@@ -54,9 +57,19 @@
     "notes": "Jegyzet",
     "deleteSet": "Törlés",
     "noExercises": "Még nincsenek gyakorlatok hozzáadva.",
+    "calculationType": {
+      "label": "Számítási mód",
+      "weight_reps": "Súly és Ismétlés",
+      "reps": "Csak Ismétlés",
+      "duration": "Csak Idő",
+      "distance_duration": "Táv és Idő",
+      "reps_duration": "Ismétlés és Idő"
+    },
     "errors": {
       "weightRequired": "Add meg a súlyt.",
       "repsRequired": "Add meg az ismétlések számát.",
+      "durationRequired": "Add meg az időt.",
+      "distanceRequired": "Add meg a távolságot.",
       "exerciseRequired": "Válassz egy gyakorlatot.",
       "saveFailed": "Nem sikerült menteni az edzést."
     }
@@ -74,6 +87,14 @@
     "nameZhLabel": "Név (kínai)",
     "categoryLabel": "Kategória",
     "selectCategory": "Válassz kategóriát...",
+    "calculationTypeLabel": "Számítási mód",
+    "calculationTypes": {
+      "weight_reps": "Súly és Ismétlés",
+      "reps": "Csak Ismétlés",
+      "duration": "Csak Idő",
+      "distance_duration": "Táv és Idő",
+      "reps_duration": "Ismétlés és Idő"
+    },
     "save": "Mentés",
     "cancel": "Mégse",
     "confirmDelete": "Biztosan törölni szeretnéd ezt a gyakorlatot?",
@@ -91,6 +112,7 @@
     "errors": {
       "nameRequired": "Add meg a gyakorlat nevét.",
       "categoryRequired": "Válassz kategóriát.",
+      "calculationTypeRequired": "Válassz számítási módot.",
       "saveFailed": "Nem sikerült menteni a gyakorlatot.",
       "deleteFailed": "Nem sikerült törölni a gyakorlatot."
     }

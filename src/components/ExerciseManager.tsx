@@ -6,7 +6,15 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useTranslations } from 'next-intl'
 import { Plus, ChevronDown, ChevronUp, Pencil, Trash2, Dumbbell } from 'lucide-react'
-import { getExerciseDisplayName, getPrimaryNameField, type Exercise, type Locale } from '@/lib/exercises'
+import {
+  getExerciseDisplayName,
+  getPrimaryNameField,
+  getExerciseCalculationType,
+  CALCULATION_TYPES,
+  type Exercise,
+  type Locale,
+  type CalculationType,
+} from '@/lib/exercises'
 import { createExercise, updateExercise, deleteExercise } from '@/lib/actions/exercise'
 
 // ─── Types & Schema ──────────────────────────────────────────────────────────
@@ -19,6 +27,7 @@ const ExerciseFormSchema = z.object({
   name_en: z.string().max(200).optional(),
   name_zh: z.string().max(200).optional(),
   category: z.enum(CATEGORIES),
+  calculation_type: z.enum(CALCULATION_TYPES as unknown as [CalculationType, ...CalculationType[]]),
 }).refine((d) => d.name_hu || d.name_en || d.name_zh, {
   message: 'At least one name must be provided',
 })
@@ -45,7 +54,7 @@ export default function ExerciseManager({ exercises: initialExercises, locale }:
 
   const form = useForm<ExerciseFormValues>({
     resolver: zodResolver(ExerciseFormSchema),
-    defaultValues: { name_hu: '', name_en: '', name_zh: '', category: 'legs' },
+    defaultValues: { name_hu: '', name_en: '', name_zh: '', category: 'legs', calculation_type: 'weight_reps' },
   })
 
   const categoryLabel: Record<Category, string> = {
@@ -59,8 +68,16 @@ export default function ExerciseManager({ exercises: initialExercises, locale }:
     other: t('categories.other'),
   }
 
+  const calcTypeLabel: Record<CalculationType, string> = {
+    weight_reps: t('calculationTypes.weight_reps'),
+    reps: t('calculationTypes.reps'),
+    duration: t('calculationTypes.duration'),
+    distance_duration: t('calculationTypes.distance_duration'),
+    reps_duration: t('calculationTypes.reps_duration'),
+  }
+
   function startNew() {
-    form.reset({ name_hu: '', name_en: '', name_zh: '', category: 'legs' })
+    form.reset({ name_hu: '', name_en: '', name_zh: '', category: 'legs', calculation_type: 'weight_reps' })
     setEditingId(null)
     setShowForm(true)
     setError(null)
@@ -72,6 +89,7 @@ export default function ExerciseManager({ exercises: initialExercises, locale }:
       name_en: ex.name_en ?? '',
       name_zh: ex.name_zh ?? '',
       category: ex.category as Category,
+      calculation_type: getExerciseCalculationType(ex),
     })
     setEditingId(ex.id)
     setShowForm(true)
@@ -86,6 +104,7 @@ export default function ExerciseManager({ exercises: initialExercises, locale }:
         name_en: values.name_en || null,
         name_zh: values.name_zh || null,
         category: values.category,
+        calculation_type: values.calculation_type,
       }
 
       if (editingId) {
@@ -167,24 +186,46 @@ export default function ExerciseManager({ exercises: initialExercises, locale }:
             )}
           </div>
 
-          {/* Category */}
-          <div className="space-y-1">
-            <label className="text-xs font-medium text-foreground">{t('categoryLabel')} *</label>
-            <select
-              {...form.register('category')}
-              className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm
-                         focus:outline-none focus:ring-2 focus:ring-primary"
-            >
-              {CATEGORIES.map((cat) => (
-                <option
-                  key={cat}
-                  value={cat}
-                  className="bg-card text-foreground dark:bg-zinc-900 dark:text-zinc-100"
-                >
-                  {categoryLabel[cat]}
-                </option>
-              ))}
-            </select>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {/* Category */}
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-foreground">{t('categoryLabel')} *</label>
+              <select
+                {...form.register('category')}
+                className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm
+                           focus:outline-none focus:ring-2 focus:ring-primary"
+              >
+                {CATEGORIES.map((cat) => (
+                  <option
+                    key={cat}
+                    value={cat}
+                    className="bg-card text-foreground dark:bg-zinc-900 dark:text-zinc-100"
+                  >
+                    {categoryLabel[cat]}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Calculation Type */}
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-foreground">{t('calculationTypeLabel')} *</label>
+              <select
+                {...form.register('calculation_type')}
+                className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm
+                           focus:outline-none focus:ring-2 focus:ring-primary"
+              >
+                {CALCULATION_TYPES.map((type) => (
+                  <option
+                    key={type}
+                    value={type}
+                    className="bg-card text-foreground dark:bg-zinc-900 dark:text-zinc-100"
+                  >
+                    {calcTypeLabel[type]}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
           {/* Optional translations toggle */}
@@ -279,9 +320,14 @@ export default function ExerciseManager({ exercises: initialExercises, locale }:
                     className="flex items-center justify-between px-4 py-3 rounded-xl
                                bg-card border border-border"
                   >
-                    <span className="text-sm font-medium text-foreground">
-                      {getExerciseDisplayName(ex, locale)}
-                    </span>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-sm font-medium text-foreground">
+                        {getExerciseDisplayName(ex, locale)}
+                      </span>
+                      <span className="text-[11px] px-2 py-0.5 rounded-md bg-muted text-muted-foreground font-normal">
+                        {calcTypeLabel[getExerciseCalculationType(ex)]}
+                      </span>
+                    </div>
                     {/* Only show edit/delete for user's own exercises */}
                     {ex.user_id && (
                       <div className="flex items-center gap-1">

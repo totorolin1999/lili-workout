@@ -14,11 +14,22 @@ import {
   Loader2,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { getExerciseDisplayName, type Exercise, type Locale } from '@/lib/exercises'
+import {
+  getExerciseDisplayName,
+  getExerciseCalculationType,
+  CALCULATION_TYPES,
+  type Exercise,
+  type Locale,
+  type CalculationType,
+} from '@/lib/exercises'
 import { updateWorkout, type WorkoutHistoryEntry } from '@/lib/actions/workout'
 import { formatSecondsToTime, parseTimeToSeconds, calculatePace } from '@/lib/cardio'
+import ExerciseSelectorModal from './ExerciseSelectorModal'
 
 // ─── Types & Schema ──────────────────────────────────────────────────────────
+
+const CATEGORIES = ['legs', 'chest', 'back', 'shoulders', 'arms', 'core', 'cardio', 'other'] as const
+type Category = (typeof CATEGORIES)[number]
 
 const SetSchema = z.object({
   exercise_id: z.string().optional(),
@@ -37,6 +48,7 @@ const WorkoutEditFormSchema = z.object({
   exerciseGroups: z.array(
     z.object({
       exercise_id: z.string().min(1, { message: 'exerciseRequired' }),
+      calculation_type: z.enum(CALCULATION_TYPES as unknown as [CalculationType, ...CalculationType[]]).optional(),
       sets: z.array(SetSchema).min(1),
     }),
   ).min(1),
@@ -56,31 +68,44 @@ function workoutToFormValues(
   workout: WorkoutHistoryEntry,
   exercises: Exercise[],
 ): WorkoutEditFormValues {
-  const map = new Map<string, { exercise_id: string; sets: z.infer<typeof SetSchema>[] }>()
-  const groups: { exercise_id: string; sets: z.infer<typeof SetSchema>[] }[] = []
+  const map = new Map<string, { exercise_id: string; calculation_type: CalculationType; sets: z.infer<typeof SetSchema>[] }>()
+  const groups: { exercise_id: string; calculation_type: CalculationType; sets: z.infer<typeof SetSchema>[] }[] = []
 
   for (const set of workout.workout_sets ?? []) {
     let group = map.get(set.exercise_id)
     if (!group) {
+      const ex = exercises.find((e) => e.id === set.exercise_id)
+      let calcType = getExerciseCalculationType(ex)
+
+      // Intelligent detection if set data has reps + duration (like Jump rope) or pure duration (Plank)
+      if (set.reps != null && set.duration_seconds != null && (!set.distance_km || set.distance_km === 0)) {
+        calcType = 'reps_duration'
+      } else if (set.duration_seconds != null && set.reps == null && set.weight_kg == null && !set.distance_km) {
+        calcType = 'duration'
+      }
+
       group = {
         exercise_id: set.exercise_id,
+        calculation_type: calcType,
         sets: [],
       }
       map.set(set.exercise_id, group)
       groups.push(group)
     }
 
-    const ex = exercises.find((e) => e.id === set.exercise_id)
-    const isCardio = ex?.category === 'cardio'
+    const calcType = group.calculation_type
 
     group.sets.push({
       exercise_id: set.exercise_id,
       set_number: set.set_number,
-      weight_kg: isCardio ? null : (set.weight_kg ?? 0),
-      reps: isCardio ? null : (set.reps ?? 10),
-      distance_km: isCardio ? (set.distance_km ?? null) : null,
-      duration_seconds: isCardio ? (set.duration_seconds ?? null) : null,
-      duration_text: isCardio ? (formatSecondsToTime(set.duration_seconds) ?? '') : '',
+      weight_kg: calcType === 'weight_reps' ? (set.weight_kg ?? 0) : null,
+      reps: calcType === 'weight_reps' || calcType === 'reps' || calcType === 'reps_duration' ? (set.reps ?? 10) : null,
+      distance_km: calcType === 'distance_duration' ? (set.distance_km ?? null) : null,
+      duration_seconds: calcType === 'duration' || calcType === 'distance_duration' || calcType === 'reps_duration' ? (set.duration_seconds ?? null) : null,
+      duration_text:
+        calcType === 'duration' || calcType === 'distance_duration' || calcType === 'reps_duration'
+          ? (formatSecondsToTime(set.duration_seconds) ?? '')
+          : '',
     })
   }
 
@@ -101,6 +126,7 @@ function workoutToFormValues(
         : [
             {
               exercise_id: '',
+              calculation_type: 'weight_reps',
               sets: [
                 {
                   exercise_id: '',
@@ -127,9 +153,14 @@ export default function WorkoutEditForm({
   onSuccess,
 }: WorkoutEditFormProps) {
   const t = useTranslations('workout')
+  const tEx = useTranslations('exercises')
   const tCommon = useTranslations('common')
   const [isPending, startTransition] = useTransition()
   const [saveError, setSaveError] = useState<string | null>(null)
+
+  // Picker modal state
+  const [isPickerOpen, setIsPickerOpen] = useState(false)
+  const [pickerTargetGroupIdx, setPickerTargetGroupIdx] = useState<number | 'new' | null>(null)
 
   const form = useForm<WorkoutEditFormValues>({
     resolver: zodResolver(WorkoutEditFormSchema),
@@ -145,22 +176,45 @@ export default function WorkoutEditForm({
     name: 'exerciseGroups',
   })
 
-  function addExerciseGroup() {
+  function handleOpenNewGroupPicker() {
     setSaveError(null)
-    appendGroup({
-      exercise_id: '',
-      sets: [
-        {
-          exercise_id: '',
-          set_number: 1,
-          weight_kg: 0,
-          reps: 10,
-          distance_km: null,
-          duration_seconds: null,
-          duration_text: '',
-        },
-      ],
-    })
+    setPickerTargetGroupIdx('new')
+    setIsPickerOpen(true)
+  }
+
+  function handleOpenGroupPicker(groupIdx: number) {
+    setSaveError(null)
+    setPickerTargetGroupIdx(groupIdx)
+    setIsPickerOpen(true)
+  }
+
+  function handleSelectExercise(selectedEx: Exercise) {
+    const calcType = getExerciseCalculationType(selectedEx)
+
+    if (pickerTargetGroupIdx === 'new') {
+      appendGroup({
+        exercise_id: selectedEx.id,
+        calculation_type: calcType,
+        sets: [
+          {
+            exercise_id: selectedEx.id,
+            set_number: 1,
+            weight_kg: calcType === 'weight_reps' ? 0 : null,
+            reps: calcType === 'duration' || calcType === 'distance_duration' ? null : 10,
+            distance_km: null,
+            duration_seconds: null,
+            duration_text: '',
+          },
+        ],
+      })
+    } else if (typeof pickerTargetGroupIdx === 'number') {
+      const idx = pickerTargetGroupIdx
+      form.setValue(`exerciseGroups.${idx}.exercise_id`, selectedEx.id, { shouldValidate: true })
+      form.setValue(`exerciseGroups.${idx}.calculation_type`, calcType)
+    }
+
+    setIsPickerOpen(false)
+    setPickerTargetGroupIdx(null)
   }
 
   function onSubmit(values: WorkoutEditFormValues) {
@@ -168,311 +222,393 @@ export default function WorkoutEditForm({
     startTransition(async () => {
       const flatSets = values.exerciseGroups.flatMap((group) => {
         const ex = exercises.find((e) => e.id === group.exercise_id)
-        const isCardio = ex?.category === 'cardio'
+        const calcType = group.calculation_type ?? getExerciseCalculationType(ex)
 
-        return group.sets.map((s, idx) => ({
-          exercise_id: group.exercise_id,
-          set_number: idx + 1,
-          weight_kg: isCardio
-            ? null
-            : s.weight_kg != null && s.weight_kg !== ('' as unknown)
-              ? Number(s.weight_kg)
-              : 0,
-          reps: isCardio
-            ? null
-            : s.reps != null && s.reps !== ('' as unknown)
-              ? Number(s.reps)
-              : 0,
-          distance_km:
-            isCardio && s.distance_km != null && s.distance_km !== ('' as unknown)
-              ? Number(s.distance_km)
-              : null,
-          duration_seconds: isCardio
-            ? (s.duration_seconds ?? parseTimeToSeconds(s.duration_text))
-            : null,
-        }))
+        return group.sets.map((s) => {
+          let weight_kg: number | null = null
+          let reps: number | null = null
+          let distance_km: number | null = null
+          let duration_seconds: number | null = null
+
+          if (calcType === 'weight_reps') {
+            weight_kg = s.weight_kg != null && s.weight_kg !== ('' as unknown) ? Number(s.weight_kg) : 0
+            reps = s.reps != null && s.reps !== ('' as unknown) ? Number(s.reps) : 0
+          } else if (calcType === 'reps') {
+            reps = s.reps != null && s.reps !== ('' as unknown) ? Number(s.reps) : 0
+          } else if (calcType === 'duration') {
+            duration_seconds = s.duration_seconds ?? parseTimeToSeconds(s.duration_text)
+          } else if (calcType === 'distance_duration') {
+            distance_km = s.distance_km != null && s.distance_km !== ('' as unknown) ? Number(s.distance_km) : null
+            duration_seconds = s.duration_seconds ?? parseTimeToSeconds(s.duration_text)
+          } else if (calcType === 'reps_duration') {
+            reps = s.reps != null && s.reps !== ('' as unknown) ? Number(s.reps) : null
+            duration_seconds = s.duration_seconds ?? parseTimeToSeconds(s.duration_text)
+          }
+
+          return {
+            exercise_id: group.exercise_id,
+            set_number: s.set_number,
+            weight_kg,
+            reps,
+            distance_km,
+            duration_seconds,
+          }
+        })
       })
 
       const result = await updateWorkout(workout.id, {
         date: values.date,
-        title: values.title?.trim() || undefined,
-        notes: values.notes?.trim() || undefined,
+        title: values.title || undefined,
+        notes: values.notes || undefined,
         sets: flatSets,
       })
 
-      if (result.error) {
-        setSaveError(`${t('errors.saveFailed')}: ${result.error}`)
-        return
-      }
-
-      if (result.workout) {
+      if (result.error || !result.workout) {
+        setSaveError(`${t('errors.saveFailed')}: ${result.error ?? ''}`)
+      } else {
         onSuccess(result.workout)
       }
     })
   }
 
   function onInvalid(errors: FieldErrors<WorkoutEditFormValues>) {
-    console.warn('Workout edit form errors:', errors)
+    console.warn('Edit workout form validation errors:', errors)
     const hasExerciseError = errors.exerciseGroups?.some?.((g) => g?.exercise_id)
     if (hasExerciseError) {
       setSaveError(t('errors.exerciseRequired'))
       return
     }
+
     const hasRepsError = errors.exerciseGroups?.some?.((g, gIdx) => {
       const selectedId = form.getValues(`exerciseGroups.${gIdx}.exercise_id`)
       const ex = exercises.find((e) => e.id === selectedId)
-      if (ex?.category === 'cardio') return false
+      const calcType = form.getValues(`exerciseGroups.${gIdx}.calculation_type`) ?? getExerciseCalculationType(ex)
+      if (calcType === 'duration' || calcType === 'distance_duration') return false
       return g?.sets?.some?.((s) => s?.reps)
     })
     if (hasRepsError) {
       setSaveError(t('errors.repsRequired'))
       return
     }
+
     const hasWeightError = errors.exerciseGroups?.some?.((g, gIdx) => {
       const selectedId = form.getValues(`exerciseGroups.${gIdx}.exercise_id`)
       const ex = exercises.find((e) => e.id === selectedId)
-      if (ex?.category === 'cardio') return false
+      const calcType = form.getValues(`exerciseGroups.${gIdx}.calculation_type`) ?? getExerciseCalculationType(ex)
+      if (calcType !== 'weight_reps') return false
       return g?.sets?.some?.((s) => s?.weight_kg)
     })
     if (hasWeightError) {
       setSaveError(t('errors.weightRequired'))
       return
     }
+
     setSaveError(t('errors.saveFailed'))
   }
 
+  const watchedGroups = form.watch('exerciseGroups')
+
   return (
     <div className="space-y-4">
-      {/* Date + Title */}
+      {/* Date & Title */}
       <div className="space-y-2">
-        <div>
-          <label className="text-xs font-medium text-muted-foreground mb-1 block">
-            {t('workoutDate')}
-          </label>
-          <input
-            type="date"
-            {...form.register('date')}
-            className="w-full rounded-xl border border-border bg-card px-3.5 py-2 text-sm
-                       focus:outline-none focus:ring-2 focus:ring-primary"
-            aria-label={t('workoutDate')}
-          />
-        </div>
-        <div>
-          <label className="text-xs font-medium text-muted-foreground mb-1 block">
-            {t('workoutTitle')}
-          </label>
-          <input
-            type="text"
-            {...form.register('title')}
-            placeholder={t('workoutTitle')}
-            className="w-full rounded-xl border border-border bg-card px-3.5 py-2 text-sm
-                       focus:outline-none focus:ring-2 focus:ring-primary"
-          />
-        </div>
+        <label className="text-xs font-semibold text-muted-foreground block">
+          {t('workoutDate')}
+        </label>
+        <input
+          type="date"
+          {...form.register('date')}
+          className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm
+                     focus:outline-none focus:ring-2 focus:ring-primary"
+        />
+
+        <input
+          type="text"
+          {...form.register('title')}
+          placeholder={t('workoutTitle')}
+          className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm
+                     focus:outline-none focus:ring-2 focus:ring-primary"
+        />
       </div>
 
       {/* Exercise Groups */}
       <div className="space-y-3">
         {exerciseGroupFields.map((groupField, groupIdx) => (
-          <EditExerciseGroupCard
+          <ExerciseGroupCard
             key={groupField.id}
             groupIdx={groupIdx}
             form={form}
             exercises={exercises}
             locale={locale}
             t={t}
+            tEx={tEx}
             tCommon={tCommon}
+            onOpenPicker={() => handleOpenGroupPicker(groupIdx)}
             onRemoveGroup={() => removeGroup(groupIdx)}
           />
         ))}
       </div>
 
-      {/* Add Exercise button */}
+      {/* Add Exercise */}
       <button
         type="button"
-        onClick={addExerciseGroup}
-        className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl
-                   border-2 border-dashed border-border text-xs font-medium text-muted-foreground
-                   hover:border-primary hover:text-primary transition-colors"
+        onClick={handleOpenNewGroupPicker}
+        className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl
+                   border border-dashed border-border text-xs font-medium text-foreground
+                   hover:border-primary hover:text-primary hover:bg-primary/5 transition-all"
       >
         <Plus className="h-4 w-4" />
         {t('addExercise')}
       </button>
 
       {/* Notes */}
-      <div>
-        <label className="text-xs font-medium text-muted-foreground mb-1 block">
-          {t('workoutNotes')}
+      <div className="space-y-1">
+        <label className="text-xs font-semibold text-muted-foreground block">
+          {t('notes')}
         </label>
         <textarea
           {...form.register('notes')}
-          placeholder={t('workoutNotes')}
           rows={2}
-          className="w-full rounded-xl border border-border bg-card px-3.5 py-2 text-sm
+          placeholder={t('workoutNotes')}
+          className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm
                      focus:outline-none focus:ring-2 focus:ring-primary resize-none"
         />
       </div>
 
-      {/* Save error */}
+      {/* Errors */}
       {saveError && (
         <p className="text-xs text-destructive text-center">{saveError}</p>
       )}
 
-      {/* Action buttons */}
-      <div className="flex items-center justify-end gap-2 pt-2 border-t border-border/80">
+      {/* Action Buttons */}
+      <div className="flex items-center gap-2 pt-2">
         <button
           type="button"
           onClick={onCancel}
           disabled={isPending}
-          className="px-4 py-2 rounded-xl border border-border text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors disabled:opacity-50"
+          className="flex-1 py-2.5 rounded-xl border border-border bg-muted/50 text-foreground text-xs font-medium hover:bg-muted transition-colors disabled:opacity-50"
         >
           {tCommon('cancel')}
         </button>
         <button
           type="button"
           onClick={form.handleSubmit(onSubmit, onInvalid)}
-          disabled={isPending || exerciseGroupFields.length === 0}
-          className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50"
+          disabled={isPending}
+          className="flex-1 py-2.5 rounded-xl bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition-colors flex items-center justify-center gap-1.5 disabled:opacity-50"
         >
           {isPending ? (
             <>
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              <span>{tCommon('save')}...</span>
+              {t('saveWorkout')}...
             </>
           ) : (
             <>
               <Save className="h-3.5 w-3.5" />
-              <span>{tCommon('save')}</span>
+              {t('saveWorkout')}
             </>
           )}
         </button>
       </div>
+
+      {/* Categorized Exercise Selection Modal */}
+      <ExerciseSelectorModal
+        isOpen={isPickerOpen}
+        onClose={() => {
+          setIsPickerOpen(false)
+          setPickerTargetGroupIdx(null)
+        }}
+        onSelect={handleSelectExercise}
+        exercises={exercises}
+        selectedExerciseId={
+          typeof pickerTargetGroupIdx === 'number'
+            ? watchedGroups[pickerTargetGroupIdx]?.exercise_id
+            : undefined
+        }
+        locale={locale}
+      />
     </div>
   )
 }
 
-// ─── Edit Exercise Group Card ─────────────────────────────────────────────────
+// ─── Exercise Group Card ──────────────────────────────────────────────────────
 
-interface EditExerciseGroupCardProps {
+interface ExerciseGroupCardProps {
   groupIdx: number
   form: ReturnType<typeof useForm<WorkoutEditFormValues>>
   exercises: Exercise[]
   locale: Locale
   t: ReturnType<typeof useTranslations<'workout'>>
+  tEx: ReturnType<typeof useTranslations<'exercises'>>
   tCommon: ReturnType<typeof useTranslations<'common'>>
+  onOpenPicker: () => void
   onRemoveGroup: () => void
 }
 
-function EditExerciseGroupCard({
+function ExerciseGroupCard({
   groupIdx,
   form,
   exercises,
   locale,
   t,
+  tEx,
   tCommon,
+  onOpenPicker,
   onRemoveGroup,
-}: EditExerciseGroupCardProps) {
+}: ExerciseGroupCardProps) {
   const [isCollapsed, setIsCollapsed] = useState(false)
 
-  const { fields: setFields, append: appendSet, remove: removeSet } = useFieldArray({
+  const {
+    fields: setFields,
+    append: appendSet,
+    remove: removeSet,
+  } = useFieldArray({
     control: form.control,
     name: `exerciseGroups.${groupIdx}.sets`,
   })
 
   const selectedExerciseId = form.watch(`exerciseGroups.${groupIdx}.exercise_id`)
+  const currentCalcType = form.watch(`exerciseGroups.${groupIdx}.calculation_type`)
   const registerExercise = form.register(`exerciseGroups.${groupIdx}.exercise_id`)
   const groupErrors = form.formState.errors.exerciseGroups?.[groupIdx]
 
   const selectedExercise = exercises.find((ex) => ex.id === selectedExerciseId)
-  const isCardio = selectedExercise?.category === 'cardio'
+  const calcType = currentCalcType ?? getExerciseCalculationType(selectedExercise)
+
+  const calcTypeLabel: Record<CalculationType, string> = {
+    weight_reps: t('calculationType.weight_reps'),
+    reps: t('calculationType.reps'),
+    duration: t('calculationType.duration'),
+    distance_duration: t('calculationType.distance_duration'),
+    reps_duration: t('calculationType.reps_duration'),
+  }
+
+  const categoryLabel: Record<Category, string> = {
+    legs: tEx('categories.legs'),
+    chest: tEx('categories.chest'),
+    back: tEx('categories.back'),
+    shoulders: tEx('categories.shoulders'),
+    arms: tEx('categories.arms'),
+    core: tEx('categories.core'),
+    cardio: tEx('categories.cardio'),
+    other: tEx('categories.other'),
+  }
+
+  const groupedExercises = exercises.reduce<Record<string, Exercise[]>>((acc, ex) => {
+    const cat = ex.category || 'other'
+    if (!acc[cat]) acc[cat] = []
+    acc[cat].push(ex)
+    return acc
+  }, {})
 
   function addSet() {
     const currentSets = form.getValues(`exerciseGroups.${groupIdx}.sets`) || []
     const lastSet = currentSets[currentSets.length - 1]
-    if (isCardio) {
-      appendSet({
-        exercise_id: selectedExerciseId || '',
-        set_number: setFields.length + 1,
-        weight_kg: null,
-        reps: null,
-        distance_km: lastSet?.distance_km ?? null,
-        duration_seconds: lastSet?.duration_seconds ?? null,
-        duration_text: lastSet?.duration_text ?? '',
-      })
-    } else {
-      appendSet({
-        exercise_id: selectedExerciseId || '',
-        set_number: setFields.length + 1,
-        weight_kg: lastSet?.weight_kg ?? 0,
-        reps: lastSet?.reps ?? 10,
-        distance_km: null,
-        duration_seconds: null,
-        duration_text: '',
-      })
-    }
+
+    appendSet({
+      exercise_id: selectedExerciseId || '',
+      set_number: setFields.length + 1,
+      weight_kg: calcType === 'weight_reps' ? (lastSet?.weight_kg ?? 0) : null,
+      reps: calcType === 'weight_reps' || calcType === 'reps' || calcType === 'reps_duration' ? (lastSet?.reps ?? 10) : null,
+      distance_km: calcType === 'distance_duration' ? (lastSet?.distance_km ?? null) : null,
+      duration_seconds:
+        calcType === 'duration' || calcType === 'distance_duration' || calcType === 'reps_duration'
+          ? (lastSet?.duration_seconds ?? null)
+          : null,
+      duration_text:
+        calcType === 'duration' || calcType === 'distance_duration' || calcType === 'reps_duration'
+          ? (lastSet?.duration_text ?? '')
+          : '',
+    })
+  }
+
+  function handleCalcTypeChange(newType: CalculationType) {
+    form.setValue(`exerciseGroups.${groupIdx}.calculation_type`, newType)
   }
 
   return (
     <div className="rounded-xl border border-border/80 bg-card overflow-hidden">
       {/* Group header */}
       <div className="flex items-center gap-2 px-3 py-2 bg-muted/40 border-b border-border/60">
-        <div className="flex-1">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              type="button"
+              onClick={onOpenPicker}
+              className="text-left font-semibold text-xs text-foreground hover:text-primary transition-colors flex items-center gap-1.5"
+            >
+              <span className={cn(!selectedExercise && 'text-muted-foreground')}>
+                {selectedExercise ? getExerciseDisplayName(selectedExercise, locale) : t('selectExercise')}
+              </span>
+              <ChevronDown className="h-3 w-3 text-muted-foreground" />
+            </button>
+
+            <select
+              value={calcType}
+              onChange={(e) => handleCalcTypeChange(e.target.value as CalculationType)}
+              className="text-[10px] font-medium bg-muted/80 text-foreground px-1.5 py-0.5 rounded border border-border/60 cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary"
+              title={t('calculationType.label')}
+            >
+              {CALCULATION_TYPES.map((type) => (
+                <option key={type} value={type}>
+                  {calcTypeLabel[type]}
+                </option>
+              ))}
+            </select>
+          </div>
+
           <select
             {...registerExercise}
             onChange={(e) => {
               registerExercise.onChange(e)
               const newId = e.target.value
               const ex = exercises.find((item) => item.id === newId)
-              if (ex?.category === 'cardio') {
-                const currentSets = form.getValues(`exerciseGroups.${groupIdx}.sets`) || []
-                currentSets.forEach((_, idx) => {
-                  form.setValue(`exerciseGroups.${groupIdx}.sets.${idx}.weight_kg`, null)
-                  form.setValue(`exerciseGroups.${groupIdx}.sets.${idx}.reps`, null)
-                })
-              } else {
-                const currentSets = form.getValues(`exerciseGroups.${groupIdx}.sets`) || []
-                currentSets.forEach((_, idx) => {
-                  form.setValue(`exerciseGroups.${groupIdx}.sets.${idx}.distance_km`, null)
-                  form.setValue(`exerciseGroups.${groupIdx}.sets.${idx}.duration_seconds`, null)
-                  form.setValue(`exerciseGroups.${groupIdx}.sets.${idx}.duration_text`, '')
-                })
+              if (ex) {
+                form.setValue(`exerciseGroups.${groupIdx}.calculation_type`, getExerciseCalculationType(ex))
               }
             }}
-            className={cn(
-              'w-full bg-transparent text-xs font-semibold text-foreground',
-              'focus:outline-none focus:ring-0 border-0 cursor-pointer',
-              groupErrors?.exercise_id && 'text-destructive',
-            )}
+            className="sr-only"
+            tabIndex={-1}
+            aria-hidden="true"
           >
-            <option value="" className="bg-card text-foreground dark:bg-zinc-900 dark:text-zinc-100">
-              {t('selectExercise')}
-            </option>
-            {exercises.map((ex) => (
-              <option
-                key={ex.id}
-                value={ex.id}
-                className="bg-card text-foreground dark:bg-zinc-900 dark:text-zinc-100"
-              >
-                {getExerciseDisplayName(ex, locale)}
-              </option>
-            ))}
+            <option value="">{t('selectExercise')}</option>
+            {CATEGORIES.map((cat) => {
+              const catExs = groupedExercises[cat]
+              if (!catExs?.length) return null
+              return (
+                <optgroup key={cat} label={categoryLabel[cat]}>
+                  {catExs.map((ex) => (
+                    <option key={ex.id} value={ex.id}>
+                      {getExerciseDisplayName(ex, locale)}
+                    </option>
+                  ))}
+                </optgroup>
+              )
+            })}
           </select>
+
           {groupErrors?.exercise_id && (
-            <p className="text-[11px] text-destructive mt-0.5">{t('errors.exerciseRequired')}</p>
+            <p className="text-[10px] text-destructive mt-0.5">
+              {t('errors.exerciseRequired')}
+            </p>
           )}
         </div>
+
         <button
           type="button"
           onClick={() => setIsCollapsed((p) => !p)}
-          className="p-1 rounded-lg hover:bg-muted transition-colors text-muted-foreground"
+          className="p-1 rounded hover:bg-muted transition-colors text-muted-foreground"
           aria-label={isCollapsed ? tCommon('expand') : tCommon('collapse')}
         >
-          {isCollapsed ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronUp className="h-3.5 w-3.5" />}
+          {isCollapsed ? (
+            <ChevronDown className="h-3.5 w-3.5" />
+          ) : (
+            <ChevronUp className="h-3.5 w-3.5" />
+          )}
         </button>
         <button
           type="button"
           onClick={onRemoveGroup}
-          className="p-1 rounded-lg hover:bg-destructive/10 text-destructive transition-colors"
+          className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
           aria-label={t('deleteSet')}
         >
           <Trash2 className="h-3.5 w-3.5" />
@@ -483,33 +619,62 @@ function EditExerciseGroupCard({
       {!isCollapsed && (
         <div className="divide-y divide-border/60">
           {/* Column headers */}
-          <div className="grid grid-cols-[2rem_1fr_1fr_auto] gap-2 px-3 py-1.5 text-[11px] font-medium text-muted-foreground bg-muted/10">
+          <div
+            className={cn(
+              'gap-2 px-3 py-1.5 text-[11px] font-medium text-muted-foreground items-center bg-muted/10',
+              calcType === 'reps' || calcType === 'duration'
+                ? 'grid grid-cols-[1.5rem_1fr_auto]'
+                : 'grid grid-cols-[1.5rem_1fr_1fr_auto]',
+            )}
+          >
             <span className="text-center">#</span>
-            <span>{isCardio ? t('distance') : t('weight')}</span>
-            <span>{isCardio ? t('duration') : t('reps')}</span>
-            <span className="w-6"></span>
+            {calcType === 'weight_reps' && (
+              <>
+                <span className="text-center">{t('weight')}</span>
+                <span className="text-center">{t('reps')}</span>
+              </>
+            )}
+            {calcType === 'reps' && (
+              <span className="text-center">{t('reps')}</span>
+            )}
+            {calcType === 'duration' && (
+              <span className="text-center">{t('duration')}</span>
+            )}
+            {calcType === 'distance_duration' && (
+              <>
+                <span className="text-center">{t('distance')}</span>
+                <span className="text-center">{t('duration')}</span>
+              </>
+            )}
+            {calcType === 'reps_duration' && (
+              <>
+                <span className="text-center">{t('reps')}</span>
+                <span className="text-center">{t('duration')}</span>
+              </>
+            )}
+            <span className="w-5"></span>
           </div>
 
           {setFields.map((setField, setIdx) => (
-            <EditSetRow
+            <SetRow
               key={setField.id}
               groupIdx={groupIdx}
               setIdx={setIdx}
-              isCardio={Boolean(isCardio)}
+              calcType={calcType}
               form={form}
               t={t}
               onRemove={() => removeSet(setIdx)}
             />
           ))}
 
-          {/* Add set button */}
+          {/* Add Set Button */}
           <button
             type="button"
             onClick={addSet}
-            className="w-full flex items-center justify-center gap-1.5 py-2 text-xs
+            className="w-full flex items-center justify-center gap-1 py-1.5 text-xs
                        font-medium text-primary hover:bg-primary/5 transition-colors"
           >
-            <Plus className="h-3.5 w-3.5" />
+            <Plus className="h-3 w-3" />
             {t('addSet')}
           </button>
         </div>
@@ -518,35 +683,187 @@ function EditExerciseGroupCard({
   )
 }
 
-// ─── Edit Set Row ─────────────────────────────────────────────────────────────
+// ─── Set Row ─────────────────────────────────────────────────────────────────
 
-interface EditSetRowProps {
+interface SetRowProps {
   groupIdx: number
   setIdx: number
-  isCardio: boolean
+  calcType: CalculationType
   form: ReturnType<typeof useForm<WorkoutEditFormValues>>
   t: ReturnType<typeof useTranslations<'workout'>>
   onRemove: () => void
 }
 
-function EditSetRow({ groupIdx, setIdx, isCardio, form, t, onRemove }: EditSetRowProps) {
-  const setErrors = form.formState.errors.exerciseGroups?.[groupIdx]?.sets?.[setIdx]
+function SetRow({
+  groupIdx,
+  setIdx,
+  calcType,
+  form,
+  t,
+  onRemove,
+}: SetRowProps) {
+  const setErrors =
+    form.formState.errors.exerciseGroups?.[groupIdx]?.sets?.[setIdx]
 
-  const distanceKm = form.watch(`exerciseGroups.${groupIdx}.sets.${setIdx}.distance_km`)
-  const durationSeconds = form.watch(`exerciseGroups.${groupIdx}.sets.${setIdx}.duration_seconds`)
-  const pace = isCardio ? calculatePace(distanceKm, durationSeconds) : null
+  const distanceKm = form.watch(
+    `exerciseGroups.${groupIdx}.sets.${setIdx}.distance_km`,
+  )
+  const durationSeconds = form.watch(
+    `exerciseGroups.${groupIdx}.sets.${setIdx}.duration_seconds`,
+  )
+  const pace = calcType === 'distance_duration' ? calculatePace(distanceKm, durationSeconds) : null
 
   return (
     <div>
-      <div className="grid grid-cols-[2rem_1fr_1fr_auto] gap-2 px-3 py-2 items-center">
-        {/* Set number */}
-        <span className="text-xs font-semibold text-muted-foreground text-center">
+      <div
+        className={cn(
+          'gap-2 px-3 py-1.5 items-center',
+          calcType === 'reps' || calcType === 'duration'
+            ? 'grid grid-cols-[1.5rem_1fr_auto]'
+            : 'grid grid-cols-[1.5rem_1fr_1fr_auto]',
+        )}
+      >
+        <span className="text-[11px] font-semibold text-muted-foreground text-center">
           {setIdx + 1}
         </span>
 
-        {isCardio ? (
+        {/* 1. Weight & Reps */}
+        {calcType === 'weight_reps' && (
           <>
-            {/* Distance (km) */}
+            <Controller
+              control={form.control}
+              name={`exerciseGroups.${groupIdx}.sets.${setIdx}.weight_kg`}
+              render={({ field }) => (
+                <input
+                  {...field}
+                  value={field.value ?? ''}
+                  onChange={(e) => {
+                    const val =
+                      e.target.value === '' ? '' : Number(e.target.value)
+                    field.onChange(val)
+                  }}
+                  type="number"
+                  inputMode="decimal"
+                  step="0.5"
+                  min="0"
+                  placeholder="0"
+                  aria-label={t('weight')}
+                  className={cn(
+                    'w-full rounded-md border border-border bg-background px-1.5 py-1 text-xs text-center',
+                    'focus:outline-none focus:ring-1 focus:ring-primary',
+                    setErrors?.weight_kg &&
+                      'border-destructive focus:ring-destructive',
+                  )}
+                />
+              )}
+            />
+
+            <Controller
+              control={form.control}
+              name={`exerciseGroups.${groupIdx}.sets.${setIdx}.reps`}
+              render={({ field }) => (
+                <input
+                  {...field}
+                  value={field.value ?? ''}
+                  onChange={(e) => {
+                    const val =
+                      e.target.value === '' ? '' : Number(e.target.value)
+                    field.onChange(val)
+                  }}
+                  type="number"
+                  inputMode="numeric"
+                  step="1"
+                  min="0"
+                  placeholder="0"
+                  aria-label={t('reps')}
+                  className={cn(
+                    'w-full rounded-md border border-border bg-background px-1.5 py-1 text-xs text-center',
+                    'focus:outline-none focus:ring-1 focus:ring-primary',
+                    setErrors?.reps &&
+                      'border-destructive focus:ring-destructive',
+                  )}
+                />
+              )}
+            />
+          </>
+        )}
+
+        {/* 2. Reps Only */}
+        {calcType === 'reps' && (
+          <Controller
+            control={form.control}
+            name={`exerciseGroups.${groupIdx}.sets.${setIdx}.reps`}
+            render={({ field }) => (
+              <input
+                {...field}
+                value={field.value ?? ''}
+                onChange={(e) => {
+                  const val =
+                    e.target.value === '' ? '' : Number(e.target.value)
+                  field.onChange(val)
+                }}
+                type="number"
+                inputMode="numeric"
+                step="1"
+                min="0"
+                placeholder="0"
+                aria-label={t('reps')}
+                className={cn(
+                  'w-full rounded-md border border-border bg-background px-1.5 py-1 text-xs text-center',
+                  'focus:outline-none focus:ring-1 focus:ring-primary',
+                  setErrors?.reps &&
+                    'border-destructive focus:ring-destructive',
+                )}
+              />
+            )}
+          />
+        )}
+
+        {/* 3. Duration Only */}
+        {calcType === 'duration' && (
+          <Controller
+            control={form.control}
+            name={`exerciseGroups.${groupIdx}.sets.${setIdx}.duration_text`}
+            render={({ field }) => (
+              <input
+                {...field}
+                value={field.value ?? ''}
+                onChange={(e) => {
+                  const text = e.target.value
+                  field.onChange(text)
+                  const seconds = parseTimeToSeconds(text)
+                  form.setValue(
+                    `exerciseGroups.${groupIdx}.sets.${setIdx}.duration_seconds`,
+                    seconds,
+                  )
+                }}
+                onBlur={(e) => {
+                  const seconds = parseTimeToSeconds(e.target.value)
+                  if (seconds != null) {
+                    field.onChange(formatSecondsToTime(seconds))
+                    form.setValue(
+                      `exerciseGroups.${groupIdx}.sets.${setIdx}.duration_seconds`,
+                      seconds,
+                    )
+                  }
+                }}
+                type="text"
+                placeholder={t('durationPlaceholder')}
+                aria-label={t('duration')}
+                className={cn(
+                  'w-full rounded-md border border-border bg-background px-1.5 py-1 text-xs text-center',
+                  'focus:outline-none focus:ring-1 focus:ring-primary',
+                  setErrors?.duration_seconds &&
+                    'border-destructive focus:ring-destructive',
+                )}
+              />
+            )}
+          />
+        )}
+
+        {/* 4. Distance & Time */}
+        {calcType === 'distance_duration' && (
+          <>
             <Controller
               control={form.control}
               name={`exerciseGroups.${groupIdx}.sets.${setIdx}.distance_km`}
@@ -555,7 +872,8 @@ function EditSetRow({ groupIdx, setIdx, isCardio, form, t, onRemove }: EditSetRo
                   {...field}
                   value={field.value ?? ''}
                   onChange={(e) => {
-                    const val = e.target.value === '' ? '' : Number(e.target.value)
+                    const val =
+                      e.target.value === '' ? '' : Number(e.target.value)
                     field.onChange(val)
                   }}
                   type="number"
@@ -565,15 +883,15 @@ function EditSetRow({ groupIdx, setIdx, isCardio, form, t, onRemove }: EditSetRo
                   placeholder="0.0"
                   aria-label={t('distance')}
                   className={cn(
-                    'w-full rounded-lg border border-border bg-background px-2 py-1.5 text-xs text-center',
-                    'focus:outline-none focus:ring-2 focus:ring-primary',
-                    setErrors?.distance_km && 'border-destructive focus:ring-destructive',
+                    'w-full rounded-md border border-border bg-background px-1.5 py-1 text-xs text-center',
+                    'focus:outline-none focus:ring-1 focus:ring-primary',
+                    setErrors?.distance_km &&
+                      'border-destructive focus:ring-destructive',
                   )}
                 />
               )}
             />
 
-            {/* Duration */}
             <Controller
               control={form.control}
               name={`exerciseGroups.${groupIdx}.sets.${setIdx}.duration_text`}
@@ -604,44 +922,20 @@ function EditSetRow({ groupIdx, setIdx, isCardio, form, t, onRemove }: EditSetRo
                   placeholder={t('durationPlaceholder')}
                   aria-label={t('duration')}
                   className={cn(
-                    'w-full rounded-lg border border-border bg-background px-2 py-1.5 text-xs text-center',
-                    'focus:outline-none focus:ring-2 focus:ring-primary',
-                    setErrors?.duration_seconds && 'border-destructive focus:ring-destructive',
+                    'w-full rounded-md border border-border bg-background px-1.5 py-1 text-xs text-center',
+                    'focus:outline-none focus:ring-1 focus:ring-primary',
+                    setErrors?.duration_seconds &&
+                      'border-destructive focus:ring-destructive',
                   )}
                 />
               )}
             />
           </>
-        ) : (
-          <>
-            {/* Weight */}
-            <Controller
-              control={form.control}
-              name={`exerciseGroups.${groupIdx}.sets.${setIdx}.weight_kg`}
-              render={({ field }) => (
-                <input
-                  {...field}
-                  value={field.value ?? ''}
-                  onChange={(e) => {
-                    const val = e.target.value === '' ? '' : Number(e.target.value)
-                    field.onChange(val)
-                  }}
-                  type="number"
-                  inputMode="decimal"
-                  step="0.5"
-                  min="0"
-                  placeholder="0"
-                  aria-label={t('weight')}
-                  className={cn(
-                    'w-full rounded-lg border border-border bg-background px-2 py-1.5 text-xs text-center',
-                    'focus:outline-none focus:ring-2 focus:ring-primary',
-                    setErrors?.weight_kg && 'border-destructive focus:ring-destructive',
-                  )}
-                />
-              )}
-            />
+        )}
 
-            {/* Reps */}
+        {/* 5. Reps & Time */}
+        {calcType === 'reps_duration' && (
+          <>
             <Controller
               control={form.control}
               name={`exerciseGroups.${groupIdx}.sets.${setIdx}.reps`}
@@ -650,19 +944,60 @@ function EditSetRow({ groupIdx, setIdx, isCardio, form, t, onRemove }: EditSetRo
                   {...field}
                   value={field.value ?? ''}
                   onChange={(e) => {
-                    const val = e.target.value === '' ? '' : Number(e.target.value)
+                    const val =
+                      e.target.value === '' ? '' : Number(e.target.value)
                     field.onChange(val)
                   }}
                   type="number"
                   inputMode="numeric"
                   step="1"
-                  min="1"
+                  min="0"
                   placeholder="0"
                   aria-label={t('reps')}
                   className={cn(
-                    'w-full rounded-lg border border-border bg-background px-2 py-1.5 text-xs text-center',
-                    'focus:outline-none focus:ring-2 focus:ring-primary',
-                    setErrors?.reps && 'border-destructive focus:ring-destructive',
+                    'w-full rounded-md border border-border bg-background px-1.5 py-1 text-xs text-center',
+                    'focus:outline-none focus:ring-1 focus:ring-primary',
+                    setErrors?.reps &&
+                      'border-destructive focus:ring-destructive',
+                  )}
+                />
+              )}
+            />
+
+            <Controller
+              control={form.control}
+              name={`exerciseGroups.${groupIdx}.sets.${setIdx}.duration_text`}
+              render={({ field }) => (
+                <input
+                  {...field}
+                  value={field.value ?? ''}
+                  onChange={(e) => {
+                    const text = e.target.value
+                    field.onChange(text)
+                    const seconds = parseTimeToSeconds(text)
+                    form.setValue(
+                      `exerciseGroups.${groupIdx}.sets.${setIdx}.duration_seconds`,
+                      seconds,
+                    )
+                  }}
+                  onBlur={(e) => {
+                    const seconds = parseTimeToSeconds(e.target.value)
+                    if (seconds != null) {
+                      field.onChange(formatSecondsToTime(seconds))
+                      form.setValue(
+                        `exerciseGroups.${groupIdx}.sets.${setIdx}.duration_seconds`,
+                        seconds,
+                      )
+                    }
+                  }}
+                  type="text"
+                  placeholder={t('durationPlaceholder')}
+                  aria-label={t('duration')}
+                  className={cn(
+                    'w-full rounded-md border border-border bg-background px-1.5 py-1 text-xs text-center',
+                    'focus:outline-none focus:ring-1 focus:ring-primary',
+                    setErrors?.duration_seconds &&
+                      'border-destructive focus:ring-destructive',
                   )}
                 />
               )}
@@ -675,15 +1010,15 @@ function EditSetRow({ groupIdx, setIdx, isCardio, form, t, onRemove }: EditSetRo
           type="button"
           onClick={onRemove}
           aria-label={t('deleteSet')}
-          className="p-1 text-muted-foreground hover:text-destructive transition-colors"
+          className="p-1 text-muted-foreground hover:text-destructive transition-colors justify-self-center"
         >
           <Trash2 className="h-3.5 w-3.5" />
         </button>
       </div>
 
-      {/* Live calculated pace display */}
-      {isCardio && pace && (
-        <div className="px-10 pb-1.5 text-[10px] text-muted-foreground flex items-center gap-1.5 font-medium">
+      {/* Pace display */}
+      {calcType === 'distance_duration' && pace && (
+        <div className="px-8 pb-1.5 text-[10px] text-muted-foreground flex items-center gap-1 font-medium">
           <span className="text-primary">{t('pace')}:</span>
           <span className="text-foreground font-semibold">{pace}</span>
         </div>

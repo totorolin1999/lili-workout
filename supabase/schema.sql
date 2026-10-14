@@ -22,6 +22,9 @@ CREATE TABLE IF NOT EXISTS exercises (
   category    TEXT NOT NULL CHECK (category IN (
                   'legs','chest','back','shoulders','arms','core','cardio','other'
                 )),
+  calculation_type TEXT DEFAULT 'weight_reps' CHECK (calculation_type IN (
+                  'weight_reps','reps','duration','distance_duration','reps_duration'
+                )),
   user_id     UUID REFERENCES auth.users(id) ON DELETE CASCADE,
   created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
   CONSTRAINT at_least_one_name CHECK (

@@ -13,7 +13,13 @@ import {
   X,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { getExerciseDisplayName, type Exercise, type Locale } from '@/lib/exercises'
+import {
+  getExerciseDisplayName,
+  getExerciseCalculationType,
+  type Exercise,
+  type Locale,
+  type CalculationType,
+} from '@/lib/exercises'
 import {
   deleteWorkout,
   type WorkoutHistoryEntry,
@@ -32,6 +38,7 @@ interface ExerciseGroup {
   exerciseId: string
   exerciseName: string
   category: string
+  calcType: CalculationType
   sets: WorkoutHistorySet[]
 }
 
@@ -51,10 +58,36 @@ function groupSetsByExercise(
         ? getExerciseDisplayName(ex, locale)
         : set.exercise_id
       const category = ex?.category ?? 'other'
+
+      let calcType = getExerciseCalculationType(ex)
+
+      // Intelligent detection from set data if needed
+      const hasDistance = sets.some(
+        (s) => s.exercise_id === set.exercise_id && s.distance_km != null && Number(s.distance_km) > 0,
+      )
+      const hasReps = sets.some(
+        (s) => s.exercise_id === set.exercise_id && s.reps != null && Number(s.reps) > 0,
+      )
+      const hasWeight = sets.some(
+        (s) => s.exercise_id === set.exercise_id && s.weight_kg != null && Number(s.weight_kg) > 0,
+      )
+      const hasDuration = sets.some(
+        (s) => s.exercise_id === set.exercise_id && s.duration_seconds != null && Number(s.duration_seconds) > 0,
+      )
+
+      if (hasDistance && hasDuration) {
+        calcType = 'distance_duration'
+      } else if (hasReps && hasDuration && !hasDistance) {
+        calcType = 'reps_duration'
+      } else if (hasDuration && !hasReps && !hasWeight && !hasDistance) {
+        calcType = 'duration'
+      }
+
       group = {
         exerciseId: set.exercise_id,
         exerciseName,
         category,
+        calcType,
         sets: [],
       }
       map.set(set.exercise_id, group)
@@ -295,66 +328,150 @@ export default function WorkoutHistoryList({
                             {/* Sets list */}
                             <div className="divide-y divide-border/60 text-xs">
                               {/* Table Header */}
-                              <div className="grid grid-cols-[2.5rem_1fr_1fr] items-center gap-2 px-3.5 py-2 font-medium text-muted-foreground bg-muted/10">
+                              <div
+                                className={cn(
+                                  'items-center gap-2 px-3.5 py-2 font-medium text-muted-foreground bg-muted/10',
+                                  group.calcType === 'reps' || group.calcType === 'duration'
+                                    ? 'grid grid-cols-[2.5rem_1fr]'
+                                    : 'grid grid-cols-[2.5rem_1fr_1fr]',
+                                )}
+                              >
                                 <span>#</span>
-                                <span>{group.category === 'cardio' ? tWorkout('distance') : tWorkout('weight')}</span>
-                                <span>{group.category === 'cardio' ? tWorkout('duration') : tWorkout('reps')}</span>
+                                {group.calcType === 'weight_reps' && (
+                                  <>
+                                    <span>{tWorkout('weight')}</span>
+                                    <span>{tWorkout('reps')}</span>
+                                  </>
+                                )}
+                                {group.calcType === 'reps' && (
+                                  <span>{tWorkout('reps')}</span>
+                                )}
+                                {group.calcType === 'duration' && (
+                                  <span>{tWorkout('duration')}</span>
+                                )}
+                                {group.calcType === 'distance_duration' && (
+                                  <>
+                                    <span>{tWorkout('distance')}</span>
+                                    <span>{tWorkout('duration')}</span>
+                                  </>
+                                )}
+                                {group.calcType === 'reps_duration' && (
+                                  <>
+                                    <span>{tWorkout('reps')}</span>
+                                    <span>{tWorkout('duration')}</span>
+                                  </>
+                                )}
                               </div>
 
                               {/* Set Rows */}
                               {group.sets.map((set) => {
-                                const isCardio = group.category === 'cardio'
-                                const pace = isCardio ? calculatePace(set.distance_km, set.duration_seconds) : null
+                                const pace =
+                                  group.calcType === 'distance_duration'
+                                    ? calculatePace(set.distance_km, set.duration_seconds)
+                                    : null
 
                                 return (
                                   <div
                                     key={set.id}
-                                    className="grid grid-cols-[2.5rem_1fr_1fr] items-center gap-2 px-3.5 py-2.5 text-foreground"
+                                    className={cn(
+                                      'items-center gap-2 px-3.5 py-2.5 text-foreground',
+                                      group.calcType === 'reps' || group.calcType === 'duration'
+                                        ? 'grid grid-cols-[2.5rem_1fr]'
+                                        : 'grid grid-cols-[2.5rem_1fr_1fr]',
+                                    )}
                                   >
                                     <span className="font-medium text-muted-foreground">
                                       {set.set_number}
                                     </span>
-                                    {isCardio ? (
+
+                                    {/* 1. Weight & Reps */}
+                                    {group.calcType === 'weight_reps' && (
+                                      <>
+                                        <span className="font-semibold">
+                                          {set.weight_kg ?? 0}{' '}
+                                          <span className="font-normal text-muted-foreground text-[11px]">
+                                            kg
+                                          </span>
+                                        </span>
+                                        <span className="font-semibold">
+                                          {set.reps ?? 0}{' '}
+                                          <span className="font-normal text-muted-foreground text-[11px]">
+                                            {tWorkout('reps')}
+                                          </span>
+                                        </span>
+                                      </>
+                                    )}
+
+                                    {/* 2. Reps Only */}
+                                    {group.calcType === 'reps' && (
                                       <span className="font-semibold">
-                                        {set.distance_km != null ? (
-                                          <>
-                                            {set.distance_km}{' '}
-                                            <span className="font-normal text-muted-foreground text-[11px]">
-                                              km
-                                            </span>
-                                          </>
-                                        ) : (
-                                          '-'
-                                        )}
-                                      </span>
-                                    ) : (
-                                      <span className="font-semibold">
-                                        {set.weight_kg}{' '}
+                                        {set.reps ?? 0}{' '}
                                         <span className="font-normal text-muted-foreground text-[11px]">
-                                          kg
+                                          {tWorkout('reps')}
                                         </span>
                                       </span>
                                     )}
-                                    {isCardio ? (
-                                      <div className="flex flex-col">
+
+                                    {/* 3. Duration Only */}
+                                    {group.calcType === 'duration' && (
+                                      <span className="font-semibold">
+                                        {set.duration_seconds != null
+                                          ? formatSecondsToTime(set.duration_seconds)
+                                          : '-'}
+                                      </span>
+                                    )}
+
+                                    {/* 4. Distance & Duration */}
+                                    {group.calcType === 'distance_duration' && (
+                                      <>
+                                        <span className="font-semibold">
+                                          {set.distance_km != null ? (
+                                            <>
+                                              {set.distance_km}{' '}
+                                              <span className="font-normal text-muted-foreground text-[11px]">
+                                                km
+                                              </span>
+                                            </>
+                                          ) : (
+                                            '-'
+                                          )}
+                                        </span>
+                                        <div className="flex flex-col">
+                                          <span className="font-semibold">
+                                            {set.duration_seconds != null
+                                              ? formatSecondsToTime(set.duration_seconds)
+                                              : '-'}
+                                          </span>
+                                          {pace && (
+                                            <span className="font-normal text-muted-foreground text-[10px]">
+                                              {pace}
+                                            </span>
+                                          )}
+                                        </div>
+                                      </>
+                                    )}
+
+                                    {/* 5. Reps & Duration */}
+                                    {group.calcType === 'reps_duration' && (
+                                      <>
+                                        <span className="font-semibold">
+                                          {set.reps != null ? (
+                                            <>
+                                              {set.reps}{' '}
+                                              <span className="font-normal text-muted-foreground text-[11px]">
+                                                {tWorkout('reps')}
+                                              </span>
+                                            </>
+                                          ) : (
+                                            '-'
+                                          )}
+                                        </span>
                                         <span className="font-semibold">
                                           {set.duration_seconds != null
                                             ? formatSecondsToTime(set.duration_seconds)
                                             : '-'}
                                         </span>
-                                        {pace && (
-                                          <span className="font-normal text-muted-foreground text-[10px]">
-                                            {pace}
-                                          </span>
-                                        )}
-                                      </div>
-                                    ) : (
-                                      <span className="font-semibold">
-                                        {set.reps}{' '}
-                                        <span className="font-normal text-muted-foreground text-[11px]">
-                                          {tWorkout('reps')}
-                                        </span>
-                                      </span>
+                                      </>
                                     )}
                                   </div>
                                 )

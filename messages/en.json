@@ -41,6 +41,9 @@
     "workoutTitle": "Workout title (optional)",
     "workoutNotes": "Notes",
     "selectExercise": "Select exercise...",
+    "searchExercise": "Search exercises...",
+    "allCategories": "All",
+    "noExercisesFound": "No exercises found",
     "lastSession": "Last time",
     "kg": "kg",
     "reps": "Reps",
@@ -54,9 +57,19 @@
     "notes": "Notes",
     "deleteSet": "Delete",
     "noExercises": "No exercises added yet.",
+    "calculationType": {
+      "label": "Calculation Type",
+      "weight_reps": "Weight & Reps",
+      "reps": "Reps Only",
+      "duration": "Time Only",
+      "distance_duration": "Distance & Time",
+      "reps_duration": "Reps & Time"
+    },
     "errors": {
       "weightRequired": "Please enter the weight.",
       "repsRequired": "Please enter the reps.",
+      "durationRequired": "Please enter the duration.",
+      "distanceRequired": "Please enter the distance.",
       "exerciseRequired": "Please select an exercise.",
       "saveFailed": "Failed to save the workout."
     }
@@ -74,6 +87,14 @@
     "nameZhLabel": "Name (Chinese)",
     "categoryLabel": "Category",
     "selectCategory": "Select category...",
+    "calculationTypeLabel": "Calculation Type",
+    "calculationTypes": {
+      "weight_reps": "Weight & Reps",
+      "reps": "Reps Only",
+      "duration": "Time Only",
+      "distance_duration": "Distance & Time",
+      "reps_duration": "Reps & Time"
+    },
     "save": "Save",
     "cancel": "Cancel",
     "confirmDelete": "Are you sure you want to delete this exercise?",
@@ -91,6 +112,7 @@
     "errors": {
       "nameRequired": "Please enter the exercise name.",
       "categoryRequired": "Please select a category.",
+      "calculationTypeRequired": "Please select a calculation type.",
       "saveFailed": "Failed to save the exercise.",
       "deleteFailed": "Failed to delete the exercise."
     }

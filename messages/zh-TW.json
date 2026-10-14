@@ -41,6 +41,9 @@
     "workoutTitle": "訓練名稱（選填）",
     "workoutNotes": "備注",
     "selectExercise": "選擇動作...",
+    "searchExercise": "搜尋動作...",
+    "allCategories": "全部",
+    "noExercisesFound": "找不到符合的動作",
     "lastSession": "上次",
     "kg": "公斤",
     "reps": "次數",
@@ -54,9 +57,19 @@
     "notes": "備注",
     "deleteSet": "刪除",
     "noExercises": "尚未新增動作。",
+    "calculationType": {
+      "label": "計算方式",
+      "weight_reps": "重量 + 次數",
+      "reps": "僅次數",
+      "duration": "僅時間",
+      "distance_duration": "距離 + 時間",
+      "reps_duration": "次數 + 時間"
+    },
     "errors": {
       "weightRequired": "請輸入重量。",
       "repsRequired": "請輸入次數。",
+      "durationRequired": "請輸入時間。",
+      "distanceRequired": "請輸入距離。",
       "exerciseRequired": "請選擇動作。",
       "saveFailed": "儲存訓練失敗。"
     }
@@ -74,6 +87,14 @@
     "nameZhLabel": "名稱（中文）",
     "categoryLabel": "分類",
     "selectCategory": "選擇分類...",
+    "calculationTypeLabel": "計算方式",
+    "calculationTypes": {
+      "weight_reps": "重量 + 次數",
+      "reps": "僅次數",
+      "duration": "僅時間",
+      "distance_duration": "距離 + 時間",
+      "reps_duration": "次數 + 時間"
+    },
     "save": "儲存",
     "cancel": "取消",
     "confirmDelete": "確定要刪除此動作嗎？",
@@ -91,6 +112,7 @@
     "errors": {
       "nameRequired": "請輸入動作名稱。",
       "categoryRequired": "請選擇分類。",
+      "calculationTypeRequired": "請選擇計算方式。",
       "saveFailed": "儲存動作失敗。",
       "deleteFailed": "刪除動作失敗。"
     }
