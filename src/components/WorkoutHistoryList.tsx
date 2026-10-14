@@ -11,6 +11,8 @@ import {
   Loader2,
   Pencil,
   X,
+  CheckCircle2,
+  Circle,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import {
@@ -332,8 +334,8 @@ export default function WorkoutHistoryList({
                                 className={cn(
                                   'items-center gap-2 px-3.5 py-2 font-medium text-muted-foreground bg-muted/10',
                                   group.calcType === 'reps' || group.calcType === 'duration'
-                                    ? 'grid grid-cols-[2.5rem_1fr]'
-                                    : 'grid grid-cols-[2.5rem_1fr_1fr]',
+                                    ? 'grid grid-cols-[2.5rem_1fr_auto]'
+                                    : 'grid grid-cols-[2.5rem_1fr_1fr_auto]',
                                 )}
                               >
                                 <span>#</span>
@@ -361,6 +363,7 @@ export default function WorkoutHistoryList({
                                     <span>{tWorkout('duration')}</span>
                                   </>
                                 )}
+                                <span className="w-5 text-center"></span>
                               </div>
 
                               {/* Set Rows */}
@@ -376,8 +379,9 @@ export default function WorkoutHistoryList({
                                     className={cn(
                                       'items-center gap-2 px-3.5 py-2.5 text-foreground',
                                       group.calcType === 'reps' || group.calcType === 'duration'
-                                        ? 'grid grid-cols-[2.5rem_1fr]'
-                                        : 'grid grid-cols-[2.5rem_1fr_1fr]',
+                                        ? 'grid grid-cols-[2.5rem_1fr_auto]'
+                                        : 'grid grid-cols-[2.5rem_1fr_1fr_auto]',
+                                      set.is_completed === false && 'opacity-60',
                                     )}
                                   >
                                     <span className="font-medium text-muted-foreground">
@@ -473,6 +477,15 @@ export default function WorkoutHistoryList({
                                         </span>
                                       </>
                                     )}
+
+                                    {/* Complete status indicator */}
+                                    <span className="flex items-center justify-center w-5">
+                                      {set.is_completed !== false ? (
+                                        <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                                      ) : (
+                                        <Circle className="h-4 w-4 text-muted-foreground/30" />
+                                      )}
+                                    </span>
                                   </div>
                                 )
                               })}

@@ -55,6 +55,7 @@
     "durationPlaceholder": "分:秒 (例 25:30)",
     "pace": "配速",
     "notes": "備注",
+    "completed": "完成",
     "deleteSet": "刪除",
     "noExercises": "尚未新增動作。",
     "calculationType": {

@@ -221,7 +221,6 @@ export default function ExerciseSelectorModal({
                     const isSelected = ex.id === selectedExerciseId
                     const calcType = getExerciseCalculationType(ex)
                     const displayName = getExerciseDisplayName(ex, locale)
-                    const subName = locale === 'zh-TW' ? ex.name_en : ex.name_zh
 
                     return (
                       <button
@@ -238,18 +237,11 @@ export default function ExerciseSelectorModal({
                             : 'bg-background hover:bg-muted/60 border-border/80 text-foreground',
                         )}
                       >
-                        <div className="space-y-0.5 min-w-0 pr-2">
-                          <div className="flex items-center gap-2">
-                            <span className="font-semibold text-sm truncate">
-                              {displayName}
-                            </span>
-                            {isSelected && <Check className="h-4 w-4 text-primary flex-shrink-0" />}
-                          </div>
-                          {subName && (
-                            <p className="text-xs text-muted-foreground truncate">
-                              {subName}
-                            </p>
-                          )}
+                        <div className="flex items-center gap-2 min-w-0 pr-2">
+                          <span className="font-semibold text-sm truncate">
+                            {displayName}
+                          </span>
+                          {isSelected && <Check className="h-4 w-4 text-primary flex-shrink-0" />}
                         </div>
 
                         <span className="text-[11px] px-2 py-0.5 rounded-md bg-muted text-muted-foreground font-medium flex-shrink-0">

@@ -6,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useTranslations, useLocale } from 'next-intl'
 import {
-  Plus, Trash2, ChevronDown, ChevronUp, Save, Dumbbell, Sparkles
+  Plus, Trash2, ChevronDown, ChevronUp, Save, Dumbbell, Sparkles, Check
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import {
@@ -34,6 +34,7 @@ const SetSchema = z.object({
   distance_km: z.coerce.number().min(0).optional().nullable(),
   duration_seconds: z.coerce.number().int().min(0).optional().nullable(),
   duration_text: z.string().optional(),
+  is_completed: z.boolean(),
 })
 
 const WorkoutFormSchema = z.object({
@@ -79,6 +80,7 @@ function getDefaultSetForCalcType(
         distance_km: null,
         duration_seconds: null,
         duration_text: '',
+        is_completed: false,
       }
     case 'duration':
       return {
@@ -89,6 +91,7 @@ function getDefaultSetForCalcType(
         distance_km: null,
         duration_seconds: lastSet?.duration_seconds ?? lastSession?.duration_seconds ?? null,
         duration_text: lastSet?.duration_text ?? formatSecondsToTime(lastSession?.duration_seconds) ?? '',
+        is_completed: false,
       }
     case 'distance_duration':
       return {
@@ -99,6 +102,7 @@ function getDefaultSetForCalcType(
         distance_km: lastSet?.distance_km ?? lastSession?.distance_km ?? null,
         duration_seconds: lastSet?.duration_seconds ?? lastSession?.duration_seconds ?? null,
         duration_text: lastSet?.duration_text ?? formatSecondsToTime(lastSession?.duration_seconds) ?? '',
+        is_completed: false,
       }
     case 'reps_duration':
       return {
@@ -109,6 +113,7 @@ function getDefaultSetForCalcType(
         distance_km: null,
         duration_seconds: lastSet?.duration_seconds ?? lastSession?.duration_seconds ?? null,
         duration_text: lastSet?.duration_text ?? formatSecondsToTime(lastSession?.duration_seconds) ?? '',
+        is_completed: false,
       }
     case 'weight_reps':
     default:
@@ -120,6 +125,7 @@ function getDefaultSetForCalcType(
         distance_km: null,
         duration_seconds: null,
         duration_text: '',
+        is_completed: false,
       }
   }
 }
@@ -258,6 +264,7 @@ export default function WorkoutLogger({ exercises }: WorkoutLoggerProps) {
             reps,
             distance_km,
             duration_seconds,
+            is_completed: Boolean(s.is_completed),
           }
         })
       })
@@ -644,8 +651,8 @@ function ExerciseGroupCard({
             className={cn(
               'gap-2 px-4 py-2 text-xs font-medium text-muted-foreground items-center',
               calcType === 'reps' || calcType === 'duration'
-                ? 'grid grid-cols-[2rem_1fr_auto]'
-                : 'grid grid-cols-[2rem_1fr_1fr_auto]',
+                ? 'grid grid-cols-[2rem_1fr_2rem_1.75rem]'
+                : 'grid grid-cols-[2rem_1fr_1fr_2rem_1.75rem]',
             )}
           >
             <span className="text-center">#</span>
@@ -673,7 +680,10 @@ function ExerciseGroupCard({
                 <span className="text-center">{t('duration')}</span>
               </>
             )}
-            <span className="w-6"></span>
+            <span className="text-center flex items-center justify-center" title={t('completed')}>
+              <Check className="h-3.5 w-3.5 mx-auto opacity-70" />
+            </span>
+            <span className="w-5"></span>
           </div>
 
           {setFields.map((setField, setIdx) => (
@@ -716,24 +726,36 @@ interface SetRowProps {
 }
 
 function SetRow({ groupIdx, setIdx, calcType, form, t, onRemove }: SetRowProps) {
+  const isCompleted = form.watch(`exerciseGroups.${groupIdx}.sets.${setIdx}.is_completed`)
   const setErrors = form.formState.errors.exerciseGroups?.[groupIdx]?.sets?.[setIdx]
 
   const distanceKm = form.watch(`exerciseGroups.${groupIdx}.sets.${setIdx}.distance_km`)
   const durationSeconds = form.watch(`exerciseGroups.${groupIdx}.sets.${setIdx}.duration_seconds`)
   const pace = calcType === 'distance_duration' ? calculatePace(distanceKm, durationSeconds) : null
 
+  function handleToggleComplete() {
+    form.setValue(`exerciseGroups.${groupIdx}.sets.${setIdx}.is_completed`, !isCompleted, {
+      shouldDirty: true,
+    })
+  }
+
   return (
-    <div>
+    <div className={cn('transition-colors', isCompleted && 'bg-emerald-500/[0.05] dark:bg-emerald-950/20')}>
       <div
         className={cn(
           'gap-2 px-4 py-2 items-center',
           calcType === 'reps' || calcType === 'duration'
-            ? 'grid grid-cols-[2rem_1fr_auto]'
-            : 'grid grid-cols-[2rem_1fr_1fr_auto]',
+            ? 'grid grid-cols-[2rem_1fr_2rem_1.75rem]'
+            : 'grid grid-cols-[2rem_1fr_1fr_2rem_1.75rem]',
         )}
       >
         {/* Set number */}
-        <span className="text-xs font-semibold text-muted-foreground text-center">
+        <span
+          className={cn(
+            'text-xs font-semibold text-center transition-colors',
+            isCompleted ? 'text-emerald-600 dark:text-emerald-400 font-bold' : 'text-muted-foreground',
+          )}
+        >
           {setIdx + 1}
         </span>
 
@@ -983,6 +1005,21 @@ function SetRow({ groupIdx, setIdx, calcType, form, t, onRemove }: SetRowProps) 
             />
           </>
         )}
+
+        {/* Complete toggle button */}
+        <button
+          type="button"
+          onClick={handleToggleComplete}
+          aria-label={t('completed')}
+          className={cn(
+            'w-8 h-8 rounded-lg flex items-center justify-center transition-all justify-self-center',
+            isCompleted
+              ? 'bg-emerald-500 text-white shadow-sm hover:bg-emerald-600 active:scale-95'
+              : 'border border-border/80 bg-muted/40 text-muted-foreground/30 hover:text-muted-foreground hover:bg-muted active:scale-95',
+          )}
+        >
+          <Check className={cn('h-4 w-4', isCompleted ? 'stroke-[2.5]' : 'stroke-2')} />
+        </button>
 
         {/* Delete */}
         <button

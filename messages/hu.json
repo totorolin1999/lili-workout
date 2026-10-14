@@ -55,6 +55,7 @@
     "durationPlaceholder": "pp:mp (pl. 25:30)",
     "pace": "Tempó",
     "notes": "Jegyzet",
+    "completed": "Kész",
     "deleteSet": "Törlés",
     "noExercises": "Még nincsenek gyakorlatok hozzáadva.",
     "calculationType": {

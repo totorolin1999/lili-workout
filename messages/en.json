@@ -55,6 +55,7 @@
     "durationPlaceholder": "mm:ss (e.g. 25:30)",
     "pace": "Pace",
     "notes": "Notes",
+    "completed": "Done",
     "deleteSet": "Delete",
     "noExercises": "No exercises added yet.",
     "calculationType": {

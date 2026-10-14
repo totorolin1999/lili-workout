@@ -15,6 +15,7 @@ export interface WorkoutSet {
   reps?: number | null
   distance_km?: number | null
   duration_seconds?: number | null
+  is_completed?: boolean
 }
 
 export interface SaveWorkoutInput {
@@ -52,6 +53,7 @@ const WorkoutSetSchema = z.object({
   reps: z.number().int().positive().optional().nullable(),
   distance_km: z.number().nonnegative().optional().nullable(),
   duration_seconds: z.number().int().nonnegative().optional().nullable(),
+  is_completed: z.boolean().optional().default(false),
 })
 
 const SaveWorkoutSchema = z.object({
@@ -102,9 +104,16 @@ export async function saveWorkout(input: SaveWorkoutInput): Promise<{ id: string
     reps: s.reps ?? null,
     distance_km: s.distance_km ?? null,
     duration_seconds: s.duration_seconds ?? null,
+    is_completed: s.is_completed ?? false,
   }))
 
-  const { error: setsError } = await supabase.from('workout_sets').insert(setsToInsert)
+  let setsError = (await supabase.from('workout_sets').insert(setsToInsert)).error
+
+  if (setsError && setsError.message.includes('is_completed')) {
+    // Retry without is_completed if migration hasn't been executed
+    const fallbackSets = setsToInsert.map(({ is_completed: _, ...rest }) => rest)
+    setsError = (await supabase.from('workout_sets').insert(fallbackSets)).error
+  }
 
   if (setsError) {
     // Rollback workout header
@@ -212,6 +221,7 @@ export async function getWorkoutHistory(): Promise<WorkoutHistoryEntry[]> {
         reps,
         distance_km,
         duration_seconds,
+        is_completed,
         exercises(id, name_hu, name_en, name_zh, category)
       )
     `)
@@ -234,6 +244,8 @@ export async function getWorkoutHistory(): Promise<WorkoutHistoryEntry[]> {
           set_number,
           weight_kg,
           reps,
+          distance_km,
+          duration_seconds,
           exercises(id, name_hu, name_en, name_zh, category)
         )
       `)
@@ -241,7 +253,32 @@ export async function getWorkoutHistory(): Promise<WorkoutHistoryEntry[]> {
       .order('date', { ascending: false })
       .order('created_at', { ascending: false })
 
-    return (fallbackData as unknown as WorkoutHistoryEntry[]) ?? []
+    if (fallbackData) {
+      return (fallbackData as unknown as WorkoutHistoryEntry[]) ?? []
+    }
+
+    const { data: legacyData } = await supabase
+      .from('workouts')
+      .select(`
+        id,
+        date,
+        title,
+        notes,
+        created_at,
+        workout_sets(
+          id,
+          exercise_id,
+          set_number,
+          weight_kg,
+          reps,
+          exercises(id, name_hu, name_en, name_zh, category)
+        )
+      `)
+      .eq('user_id', user.id)
+      .order('date', { ascending: false })
+      .order('created_at', { ascending: false })
+
+    return (legacyData as unknown as WorkoutHistoryEntry[]) ?? []
   }
 
   return (data as unknown as WorkoutHistoryEntry[]) ?? []
@@ -335,9 +372,15 @@ export async function updateWorkout(
     reps: s.reps ?? null,
     distance_km: s.distance_km ?? null,
     duration_seconds: s.duration_seconds ?? null,
+    is_completed: s.is_completed ?? true,
   }))
 
-  const { error: setsError } = await supabase.from('workout_sets').insert(setsToInsert)
+  let setsError = (await supabase.from('workout_sets').insert(setsToInsert)).error
+
+  if (setsError && setsError.message.includes('is_completed')) {
+    const fallbackSets = setsToInsert.map(({ is_completed: _, ...rest }) => rest)
+    setsError = (await supabase.from('workout_sets').insert(fallbackSets)).error
+  }
 
   if (setsError) {
     if (
@@ -374,6 +417,7 @@ export async function updateWorkout(
         reps,
         distance_km,
         duration_seconds,
+        is_completed,
         exercises(id, name_hu, name_en, name_zh, category)
       )
     `)

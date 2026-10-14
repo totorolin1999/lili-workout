@@ -12,6 +12,7 @@ import {
   ChevronUp,
   Save,
   Loader2,
+  Check,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import {
@@ -39,6 +40,7 @@ const SetSchema = z.object({
   distance_km: z.coerce.number().min(0).optional().nullable(),
   duration_seconds: z.coerce.number().int().min(0).optional().nullable(),
   duration_text: z.string().optional(),
+  is_completed: z.boolean(),
 })
 
 const WorkoutEditFormSchema = z.object({
@@ -106,6 +108,7 @@ function workoutToFormValues(
         calcType === 'duration' || calcType === 'distance_duration' || calcType === 'reps_duration'
           ? (formatSecondsToTime(set.duration_seconds) ?? '')
           : '',
+      is_completed: set.is_completed ?? true,
     })
   }
 
@@ -136,6 +139,7 @@ function workoutToFormValues(
                   distance_km: null,
                   duration_seconds: null,
                   duration_text: '',
+                  is_completed: true,
                 },
               ],
             },
@@ -204,6 +208,7 @@ export default function WorkoutEditForm({
             distance_km: null,
             duration_seconds: null,
             duration_text: '',
+            is_completed: true,
           },
         ],
       })
@@ -252,6 +257,7 @@ export default function WorkoutEditForm({
             reps,
             distance_km,
             duration_seconds,
+            is_completed: Boolean(s.is_completed ?? true),
           }
         })
       })
@@ -518,6 +524,7 @@ function ExerciseGroupCard({
         calcType === 'duration' || calcType === 'distance_duration' || calcType === 'reps_duration'
           ? (lastSet?.duration_text ?? '')
           : '',
+      is_completed: lastSet?.is_completed ?? true,
     })
   }
 
@@ -623,8 +630,8 @@ function ExerciseGroupCard({
             className={cn(
               'gap-2 px-3 py-1.5 text-[11px] font-medium text-muted-foreground items-center bg-muted/10',
               calcType === 'reps' || calcType === 'duration'
-                ? 'grid grid-cols-[1.5rem_1fr_auto]'
-                : 'grid grid-cols-[1.5rem_1fr_1fr_auto]',
+                ? 'grid grid-cols-[1.5rem_1fr_1.75rem_1.5rem]'
+                : 'grid grid-cols-[1.5rem_1fr_1fr_1.75rem_1.5rem]',
             )}
           >
             <span className="text-center">#</span>
@@ -652,7 +659,10 @@ function ExerciseGroupCard({
                 <span className="text-center">{t('duration')}</span>
               </>
             )}
-            <span className="w-5"></span>
+            <span className="text-center flex items-center justify-center" title={t('completed')}>
+              <Check className="h-3 w-3 mx-auto opacity-70" />
+            </span>
+            <span className="w-4"></span>
           </div>
 
           {setFields.map((setField, setIdx) => (
@@ -702,6 +712,9 @@ function SetRow({
   t,
   onRemove,
 }: SetRowProps) {
+  const isCompleted = form.watch(
+    `exerciseGroups.${groupIdx}.sets.${setIdx}.is_completed`,
+  )
   const setErrors =
     form.formState.errors.exerciseGroups?.[groupIdx]?.sets?.[setIdx]
 
@@ -713,17 +726,28 @@ function SetRow({
   )
   const pace = calcType === 'distance_duration' ? calculatePace(distanceKm, durationSeconds) : null
 
+  function handleToggleComplete() {
+    form.setValue(`exerciseGroups.${groupIdx}.sets.${setIdx}.is_completed`, !isCompleted, {
+      shouldDirty: true,
+    })
+  }
+
   return (
-    <div>
+    <div className={cn('transition-colors', isCompleted && 'bg-emerald-500/[0.04] dark:bg-emerald-950/20')}>
       <div
         className={cn(
           'gap-2 px-3 py-1.5 items-center',
           calcType === 'reps' || calcType === 'duration'
-            ? 'grid grid-cols-[1.5rem_1fr_auto]'
-            : 'grid grid-cols-[1.5rem_1fr_1fr_auto]',
+            ? 'grid grid-cols-[1.5rem_1fr_1.75rem_1.5rem]'
+            : 'grid grid-cols-[1.5rem_1fr_1fr_1.75rem_1.5rem]',
         )}
       >
-        <span className="text-[11px] font-semibold text-muted-foreground text-center">
+        <span
+          className={cn(
+            'text-[11px] font-semibold text-center transition-colors',
+            isCompleted ? 'text-emerald-600 dark:text-emerald-400 font-bold' : 'text-muted-foreground',
+          )}
+        >
           {setIdx + 1}
         </span>
 
@@ -1004,6 +1028,21 @@ function SetRow({
             />
           </>
         )}
+
+        {/* Complete toggle button */}
+        <button
+          type="button"
+          onClick={handleToggleComplete}
+          aria-label={t('completed')}
+          className={cn(
+            'w-7 h-7 rounded-md flex items-center justify-center transition-all justify-self-center',
+            isCompleted
+              ? 'bg-emerald-500 text-white shadow-sm hover:bg-emerald-600 active:scale-95'
+              : 'border border-border/80 bg-muted/40 text-muted-foreground/30 hover:text-muted-foreground hover:bg-muted active:scale-95',
+          )}
+        >
+          <Check className={cn('h-3.5 w-3.5', isCompleted ? 'stroke-[2.5]' : 'stroke-2')} />
+        </button>
 
         {/* Delete */}
         <button

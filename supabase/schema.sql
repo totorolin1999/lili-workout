@@ -104,6 +104,7 @@ CREATE TABLE IF NOT EXISTS workout_sets (
   reps              INTEGER CHECK (reps IS NULL OR reps > 0),
   distance_km       NUMERIC(6,2) CHECK (distance_km IS NULL OR distance_km >= 0),
   duration_seconds  INTEGER CHECK (duration_seconds IS NULL OR duration_seconds >= 0),
+  is_completed      BOOLEAN NOT NULL DEFAULT true,
   created_at        TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
