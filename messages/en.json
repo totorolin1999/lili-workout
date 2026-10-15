@@ -135,10 +135,9 @@
     "zhTW": "繁體中文"
   },
   "theme": {
-    "label": "Theme",
-    "light": "Light",
-    "dark": "Dark",
-    "system": "System"
+    "label": "Toggle theme",
+    "light": "Switch to light mode",
+    "dark": "Switch to dark mode"
   },
   "common": {
     "loading": "Loading...",

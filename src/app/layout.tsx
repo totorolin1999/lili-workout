@@ -42,15 +42,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               (function() {
                 try {
                   var stored = localStorage.getItem('theme');
-                  var isDark = stored === 'dark' || ((!stored || stored === 'system') && window.matchMedia('(prefers-color-scheme: dark)').matches);
+                  var isDark = stored === 'dark' || (!stored && window.matchMedia('(prefers-color-scheme: dark)').matches);
                   if (isDark) {
                     document.documentElement.classList.add('dark');
                     document.documentElement.classList.remove('light');
                   } else {
                     document.documentElement.classList.remove('dark');
-                    if (stored === 'light') {
-                      document.documentElement.classList.add('light');
-                    }
+                    document.documentElement.classList.add('light');
                   }
                   var meta = document.querySelector('meta[name="theme-color"]');
                   if (meta) {

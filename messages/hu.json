@@ -135,10 +135,9 @@
     "zhTW": "繁體中文"
   },
   "theme": {
-    "label": "Téma",
-    "light": "Világos",
-    "dark": "Sötét",
-    "system": "Rendszer"
+    "label": "Téma váltása",
+    "light": "Váltás világos módra",
+    "dark": "Váltás sötét módra"
   },
   "common": {
     "loading": "Betöltés...",
