@@ -6,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useTranslations, useLocale } from 'next-intl'
 import {
-  Plus, Trash2, ChevronDown, ChevronUp, Save, Dumbbell, Sparkles, Check
+  Plus, Trash2, ChevronDown, ChevronUp, Save, Dumbbell, Check
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import {
@@ -54,6 +54,7 @@ type WorkoutFormValues = z.infer<typeof WorkoutFormSchema>
 
 interface WorkoutLoggerProps {
   exercises: Exercise[]
+  initialDate?: string
 }
 
 interface LastSession {
@@ -132,7 +133,7 @@ function getDefaultSetForCalcType(
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
-export default function WorkoutLogger({ exercises }: WorkoutLoggerProps) {
+export default function WorkoutLogger({ exercises, initialDate }: WorkoutLoggerProps) {
   const t = useTranslations('workout')
   const tEx = useTranslations('exercises')
   const tCommon = useTranslations('common')
@@ -158,14 +159,15 @@ export default function WorkoutLogger({ exercises }: WorkoutLoggerProps) {
   })
 
   useEffect(() => {
-    const currentDate = new Date().toISOString().slice(0, 10)
-    setToday(currentDate)
-    form.setValue('date', currentDate, {
+    const isValidInitial = initialDate && /^\d{4}-\d{2}-\d{2}$/.test(initialDate)
+    const targetDate = isValidInitial ? initialDate : new Date().toISOString().slice(0, 10)
+    setToday(targetDate)
+    form.setValue('date', targetDate, {
       shouldDirty: false,
       shouldTouch: false,
       shouldValidate: false,
     })
-  }, [form])
+  }, [form, initialDate])
 
   const { fields: exerciseGroupFields, append: appendGroup, remove: removeGroup } = useFieldArray({
     control: form.control,

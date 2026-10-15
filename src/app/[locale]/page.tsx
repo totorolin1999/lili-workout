@@ -14,9 +14,12 @@ export async function generateMetadata({ params }: PageProps<'/[locale]'>) {
   return { title: t('title') }
 }
 
-export default async function HomePage({ params }: PageProps<'/[locale]'>) {
+export default async function HomePage(props: PageProps<'/[locale]'>) {
   await connection()
-  const { locale } = await params
+  const { locale } = await props.params
+  const searchParams = await props.searchParams
+  const initialDate = typeof searchParams?.date === 'string' ? searchParams.date : undefined
+
   setRequestLocale(locale)
   const supabase = await createClient()
 
@@ -35,7 +38,7 @@ export default async function HomePage({ params }: PageProps<'/[locale]'>) {
         <CurrentDateLabel locale={locale} />
       </div>
 
-      <WorkoutLogger exercises={exercises} />
+      <WorkoutLogger exercises={exercises} initialDate={initialDate} />
     </div>
   )
 }

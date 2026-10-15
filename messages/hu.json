@@ -126,7 +126,16 @@
     "editWorkout": "Szerkesztés",
     "deleteWorkout": "Törlés",
     "confirmDelete": "Biztosan törölni szeretnéd ezt az edzést?",
-    "workoutUpdated": "Edzés frissítve!"
+    "workoutUpdated": "Edzés frissítve!",
+    "calendarView": "Naptár",
+    "listView": "Lista",
+    "today": "Ma",
+    "monthSummary": "{days} edzésnap · {sets} sorozat ebben a hónapban",
+    "restDay": "Pihenőnap",
+    "restDayDesc": "Ezen a napon nem volt edzés. A pihenés és regeneráció elengedhetetlen a fejlődéshez!",
+    "logWorkoutForDay": "Edzés rögzítése erre a napra",
+    "workoutNumber": "{number}. edzés",
+    "noWorkoutsOnDay": "Nincs edzés ezen a napon"
   },
   "language": {
     "label": "Nyelv",

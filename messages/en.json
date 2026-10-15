@@ -126,7 +126,16 @@
     "editWorkout": "Edit",
     "deleteWorkout": "Delete",
     "confirmDelete": "Are you sure you want to delete this workout?",
-    "workoutUpdated": "Workout updated!"
+    "workoutUpdated": "Workout updated!",
+    "calendarView": "Calendar",
+    "listView": "List",
+    "today": "Today",
+    "monthSummary": "{days} active days · {sets} sets this month",
+    "restDay": "Rest Day",
+    "restDayDesc": "No workout recorded for this day. Rest and recovery are essential for growth!",
+    "logWorkoutForDay": "Log workout for this day",
+    "workoutNumber": "Workout #{number}",
+    "noWorkoutsOnDay": "No workouts on this day"
   },
   "language": {
     "label": "Language",

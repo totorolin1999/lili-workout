@@ -126,7 +126,16 @@
     "editWorkout": "編輯",
     "deleteWorkout": "刪除",
     "confirmDelete": "確定要刪除此訓練記錄嗎？",
-    "workoutUpdated": "訓練記錄已更新！"
+    "workoutUpdated": "訓練記錄已更新！",
+    "calendarView": "日曆",
+    "listView": "清單",
+    "today": "今天",
+    "monthSummary": "本月訓練 {days} 天 · 共 {sets} 組",
+    "restDay": "休息日",
+    "restDayDesc": "這天沒有訓練記錄。適度休息能讓肌肉獲得充分恢復！",
+    "logWorkoutForDay": "補記這天的訓練",
+    "workoutNumber": "訓練 #{number}",
+    "noWorkoutsOnDay": "當天無訓練"
   },
   "language": {
     "label": "語言",
