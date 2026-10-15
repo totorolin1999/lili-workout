@@ -35,7 +35,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="apple-touch-icon" href="/icons/icon-192.png" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-        <meta name="theme-color" content="#7c3aed" />
+        <meta name="theme-color" content="#004c87" />
       </head>
       <body className={`${geist.variable} font-sans antialiased min-h-screen bg-background`}>
         {children}

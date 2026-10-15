@@ -40,7 +40,7 @@ export default function LanguageSwitcher() {
           <option
             key={loc.value}
             value={loc.value}
-            className="bg-card text-foreground dark:bg-zinc-900 dark:text-zinc-100"
+            className="bg-card text-foreground dark:bg-slate-900 dark:text-slate-100"
           >
             {loc.flag} {loc.label}
           </option>

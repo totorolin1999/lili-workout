@@ -1,29 +1,33 @@
 @import "tailwindcss";
 
 /* ─── Design Tokens ──────────────────────────────────────────────────────── */
+/* MTK Budapest "Kék-fehér" (Blue & White) Theme */
 :root {
   color-scheme: light;
 
   /* Backgrounds */
-  --background: #ffffff;
-  --foreground: #0f0f0f;
-  --card: #f8f8f8;
-  --muted: #f1f1f1;
-  --accent: #e8e8e8;
+  --background: #f4f8fc;
+  --foreground: #002847;
+  --card: #ffffff;
+  --muted: #eaf2f8;
+  --accent: #e0f1fb;
 
   /* Borders */
-  --border: #e0e0e0;
+  --border: #d3e4f1;
 
-  /* Primary — violet (workout energy)  */
-  --primary: #7c3aed;
-  --primary-foreground: #ffffff;
+  /* MTK Brand Colors */
+  --primary: #004c87;              /* MTK Deep Navy Blue */
+  --primary-foreground: #ffffff;   /* Crisp White */
+  --secondary: #00b5e4;            /* MTK Bright Cyan Blue */
+  --secondary-foreground: #002847;
+  --gold: #cbbf7b;                 /* MTK Champion Gold */
 
   /* Destructive */
   --destructive: #dc2626;
   --destructive-foreground: #ffffff;
 
   /* Text */
-  --muted-foreground: #737373;
+  --muted-foreground: #50728f;
 }
 
 @theme inline {
@@ -35,6 +39,9 @@
   --color-border: var(--border);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-gold: var(--gold);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
   --color-muted-foreground: var(--muted-foreground);
@@ -45,15 +52,18 @@
   :root {
     color-scheme: dark;
 
-    --background: #0a0a0a;
-    --foreground: #fafafa;
-    --card: #141414;
-    --muted: #1a1a1a;
-    --accent: #2a2a2a;
-    --border: #2e2e2e;
-    --primary: #9b5fff;
-    --primary-foreground: #ffffff;
-    --muted-foreground: #a3a3a3;
+    --background: #031422;
+    --foreground: #f2f7fc;
+    --card: #09233a;
+    --muted: #0f314f;
+    --accent: #004c87;
+    --border: #154269;
+    --primary: #00b5e4;
+    --primary-foreground: #021a2d;
+    --secondary: #004c87;
+    --secondary-foreground: #ffffff;
+    --gold: #dfd48f;
+    --muted-foreground: #7ba2c2;
   }
 }
 
@@ -101,8 +111,8 @@ select option {
   }
 
   select option {
-    background-color: #141414;
-    color: #fafafa;
+    background-color: #09233a;
+    color: #f2f7fc;
   }
 }
 

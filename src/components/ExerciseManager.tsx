@@ -199,7 +199,7 @@ export default function ExerciseManager({ exercises: initialExercises, locale }:
                   <option
                     key={cat}
                     value={cat}
-                    className="bg-card text-foreground dark:bg-zinc-900 dark:text-zinc-100"
+                    className="bg-card text-foreground dark:bg-slate-900 dark:text-slate-100"
                   >
                     {categoryLabel[cat]}
                   </option>
@@ -219,7 +219,7 @@ export default function ExerciseManager({ exercises: initialExercises, locale }:
                   <option
                     key={type}
                     value={type}
-                    className="bg-card text-foreground dark:bg-zinc-900 dark:text-zinc-100"
+                    className="bg-card text-foreground dark:bg-slate-900 dark:text-slate-100"
                   >
                     {calcTypeLabel[type]}
                   </option>
