@@ -134,6 +134,12 @@
     "en": "English",
     "zhTW": "繁體中文"
   },
+  "theme": {
+    "label": "Theme",
+    "light": "Light",
+    "dark": "Dark",
+    "system": "System"
+  },
   "common": {
     "loading": "Loading...",
     "error": "An error occurred.",

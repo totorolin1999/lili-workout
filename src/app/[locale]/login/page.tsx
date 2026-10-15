@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import LoginForm from '@/components/LoginForm'
 import LanguageSwitcher from '@/components/LanguageSwitcher'
+import ThemeToggle from '@/components/ThemeToggle'
 
 
 export async function generateMetadata({ params }: PageProps<'/[locale]/login'>) {
@@ -27,8 +28,9 @@ export default async function LoginPage({ params }: PageProps<'/[locale]/login'>
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[80vh] gap-8 px-2">
-      {/* Language switcher */}
-      <div className="self-end">
+      {/* Top controls: Theme toggle & Language switcher */}
+      <div className="self-end flex items-center gap-2">
+        <ThemeToggle />
         <LanguageSwitcher />
       </div>
 

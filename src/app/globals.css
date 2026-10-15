@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 /* ─── Design Tokens ──────────────────────────────────────────────────────── */
 /* MTK Budapest "Kék-fehér" (Blue & White) Theme */
 :root {
@@ -49,7 +51,7 @@
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not(.light) {
     color-scheme: dark;
 
     --background: #031422;
@@ -65,6 +67,42 @@
     --gold: #dfd48f;
     --muted-foreground: #7ba2c2;
   }
+}
+
+.dark {
+  color-scheme: dark;
+
+  --background: #031422;
+  --foreground: #f2f7fc;
+  --card: #09233a;
+  --muted: #0f314f;
+  --accent: #004c87;
+  --border: #154269;
+  --primary: #00b5e4;
+  --primary-foreground: #021a2d;
+  --secondary: #004c87;
+  --secondary-foreground: #ffffff;
+  --gold: #dfd48f;
+  --muted-foreground: #7ba2c2;
+}
+
+.light {
+  color-scheme: light;
+
+  --background: #f4f8fc;
+  --foreground: #002847;
+  --card: #ffffff;
+  --muted: #eaf2f8;
+  --accent: #e0f1fb;
+  --border: #d3e4f1;
+  --primary: #004c87;
+  --primary-foreground: #ffffff;
+  --secondary: #00b5e4;
+  --secondary-foreground: #002847;
+  --gold: #cbbf7b;
+  --destructive: #dc2626;
+  --destructive-foreground: #ffffff;
+  --muted-foreground: #50728f;
 }
 
 /* ─── Base Styles ─────────────────────────────────────────────────────────── */
@@ -105,12 +143,21 @@ select option {
   color: var(--foreground);
 }
 
+.dark select {
+  color-scheme: dark;
+}
+
+.dark select option {
+  background-color: #09233a;
+  color: #f2f7fc;
+}
+
 @media (prefers-color-scheme: dark) {
-  select {
+  :root:not(.light) select {
     color-scheme: dark;
   }
 
-  select option {
+  :root:not(.light) select option {
     background-color: #09233a;
     color: #f2f7fc;
   }

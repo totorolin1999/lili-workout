@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation'
 import { routing } from '@/i18n/routing'
 import { createClient } from '@/lib/supabase/server'
 import LanguageSwitcher from '@/components/LanguageSwitcher'
+import ThemeToggle from '@/components/ThemeToggle'
 import Link from 'next/link'
 import { Dumbbell, History, BookOpen, LogOut } from 'lucide-react'
 
@@ -45,7 +46,8 @@ export default async function LocaleLayout(props: LayoutProps<'/[locale]'>) {
                 <Link href={`/${locale}`} className="text-base font-bold text-foreground tracking-tight">
                   🏋️ {tApp('name')}
                 </Link>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
+                  <ThemeToggle />
                   <LanguageSwitcher />
                   <form action={async () => { 'use server'; const { createClient } = await import('@/lib/supabase/server'); const s = await createClient(); await s.auth.signOut(); }}>
                     <button
