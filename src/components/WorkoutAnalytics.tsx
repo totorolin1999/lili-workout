@@ -1,294 +1,324 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useState, useMemo } from 'react'
 import { useTranslations } from 'next-intl'
-import {
-  BarChart3,
-  PieChart,
-  Calendar as CalendarIcon,
-  Dumbbell,
-  Trophy,
-} from 'lucide-react'
+import { PieChart, Sparkles } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { Locale } from '@/lib/exercises'
 import type { WorkoutHistoryEntry } from '@/lib/actions/workout'
 
 interface WorkoutAnalyticsProps {
   workouts: WorkoutHistoryEntry[]
-  locale: Locale
+  locale?: Locale
 }
 
-const CATEGORY_COLORS: Record<string, { bar: string }> = {
-  legs: { bar: 'bg-blue-500' },
-  chest: { bar: 'bg-rose-500' },
-  back: { bar: 'bg-emerald-500' },
-  shoulders: { bar: 'bg-amber-500' },
-  arms: { bar: 'bg-purple-500' },
-  core: { bar: 'bg-indigo-500' },
-  cardio: { bar: 'bg-cyan-500' },
-  other: { bar: 'bg-zinc-500' },
+type TimeRange = 'week' | 'month' | 'all'
+
+interface CategoryItem {
+  category: string
+  count: number
+  percentage: number
+  color: string
 }
 
-export default function WorkoutAnalytics({
-  workouts,
-}: WorkoutAnalyticsProps) {
+const CATEGORY_COLORS: Record<string, string> = {
+  legs: '#3b82f6', // blue-500
+  chest: '#f43f5e', // rose-500
+  back: '#10b981', // emerald-500
+  shoulders: '#f59e0b', // amber-500
+  arms: '#8b5cf6', // purple-500
+  core: '#6366f1', // indigo-500
+  cardio: '#06b6d4', // cyan-500
+  other: '#71717a', // zinc-500
+}
+
+export default function WorkoutAnalytics({ workouts }: WorkoutAnalyticsProps) {
   const tHistory = useTranslations('history')
   const tExercises = useTranslations('exercises')
 
-  // ─── 1. Summary Overview ──────────────────────────────────────────────────
-  const summary = useMemo(() => {
-    let totalSets = 0
+  const [timeRange, setTimeRange] = useState<TimeRange>('month')
+  const [activeCategory, setActiveCategory] = useState<string | null>(null)
+
+  // ─── 1. Filter workouts by Time Range ─────────────────────────────────────
+  const filteredWorkouts = useMemo(() => {
+    if (timeRange === 'all') return workouts
+
     const now = new Date()
-    const currentYearMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
-    const activeDatesThisMonth = new Set<string>()
-
-    for (const w of workouts) {
-      if (w.date.startsWith(currentYearMonth)) {
-        activeDatesThisMonth.add(w.date)
-      }
-      totalSets += w.workout_sets?.length ?? 0
+    if (timeRange === 'week') {
+      const day = now.getDay()
+      const diffToMonday = day === 0 ? -6 : 1 - day
+      const monday = new Date(now)
+      monday.setDate(now.getDate() + diffToMonday)
+      const mondayStr = `${monday.getFullYear()}-${String(monday.getMonth() + 1).padStart(2, '0')}-${String(monday.getDate()).padStart(2, '0')}`
+      return workouts.filter((w) => w.date >= mondayStr)
     }
 
-    return {
-      totalWorkouts: workouts.length,
-      totalSets,
-      activeDaysThisMonth: activeDatesThisMonth.size,
-    }
-  }, [workouts])
-
-  // ─── 2. Weekly Workout Frequency (Last 8 Weeks) ───────────────────────────
-  const weeklyData = useMemo(() => {
-    const weeks: { weekLabel: string; count: number; isCurrentWeek: boolean }[] = []
-    const today = new Date()
-    const currentDayOfWeek = today.getDay() // 0 = Sun, 1 = Mon...
-    const diffToMonday = currentDayOfWeek === 0 ? -6 : 1 - currentDayOfWeek
-    const currentMonday = new Date(today)
-    currentMonday.setDate(today.getDate() + diffToMonday)
-    currentMonday.setHours(0, 0, 0, 0)
-
-    for (let i = 7; i >= 0; i--) {
-      const mon = new Date(currentMonday)
-      mon.setDate(currentMonday.getDate() - i * 7)
-      const sun = new Date(mon)
-      sun.setDate(mon.getDate() + 6)
-      sun.setHours(23, 59, 59, 999)
-
-      const monStr = `${mon.getFullYear()}-${String(mon.getMonth() + 1).padStart(2, '0')}-${String(mon.getDate()).padStart(2, '0')}`
-      const sunStr = `${sun.getFullYear()}-${String(sun.getMonth() + 1).padStart(2, '0')}-${String(sun.getDate()).padStart(2, '0')}`
-
-      const daysInWeek = new Set<string>()
-      for (const w of workouts) {
-        if (w.date >= monStr && w.date <= sunStr) {
-          daysInWeek.add(w.date)
-        }
-      }
-
-      const label = `${mon.getMonth() + 1}/${mon.getDate()}`
-      weeks.push({
-        weekLabel: label,
-        count: daysInWeek.size,
-        isCurrentWeek: i === 0,
-      })
+    if (timeRange === 'month') {
+      const monthPrefix = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+      return workouts.filter((w) => w.date.startsWith(monthPrefix))
     }
 
-    return weeks
-  }, [workouts])
+    return workouts
+  }, [workouts, timeRange])
 
-  // ─── 3. Muscle Group / Category Breakdown ──────────────────────────────────
-  const categoryStats = useMemo(() => {
+  // ─── 2. Calculate Category Breakdown ──────────────────────────────────────
+  const { categoryStats, totalSets } = useMemo(() => {
     const map = new Map<string, number>()
-    let totalValidSets = 0
+    let total = 0
 
-    for (const w of workouts) {
+    for (const w of filteredWorkouts) {
       for (const s of w.workout_sets ?? []) {
         const related = s.exercises
         const ex = Array.isArray(related) ? related[0] : related
         const cat = ex?.category ?? 'other'
         map.set(cat, (map.get(cat) ?? 0) + 1)
-        totalValidSets++
+        total++
       }
     }
 
-    if (totalValidSets === 0) return []
+    if (total === 0) {
+      return { categoryStats: [], totalSets: 0 }
+    }
 
-    return Array.from(map.entries())
+    const stats: CategoryItem[] = Array.from(map.entries())
       .map(([category, count]) => ({
         category,
         count,
-        percentage: Math.round((count / totalValidSets) * 100),
+        percentage: Math.round((count / total) * 100),
+        color: CATEGORY_COLORS[category] ?? CATEGORY_COLORS.other,
       }))
       .sort((a, b) => b.count - a.count)
-  }, [workouts])
+
+    return { categoryStats: stats, totalSets: total }
+  }, [filteredWorkouts])
+
+  // ─── 3. Donut Chart Geometry (SVG) ────────────────────────────────────────
+  const RADIUS = 68
+  const CIRCUMFERENCE = 2 * Math.PI * RADIUS
+
+  const donutSegments = useMemo(() => {
+    let accumulatedOffset = 0
+    return categoryStats.map((item) => {
+      const segmentLength = (item.count / totalSets) * CIRCUMFERENCE
+      const offset = accumulatedOffset
+      accumulatedOffset += segmentLength
+      return {
+        ...item,
+        strokeDasharray: `${segmentLength} ${CIRCUMFERENCE - segmentLength}`,
+        strokeDashoffset: -offset,
+      }
+    })
+  }, [categoryStats, totalSets, CIRCUMFERENCE])
+
+  // Focused category for center label
+  const activeItem = useMemo(() => {
+    if (!activeCategory) return null
+    return categoryStats.find((c) => c.category === activeCategory) ?? null
+  }, [activeCategory, categoryStats])
+
+  function getCategoryLabel(categoryKey: string): string {
+    try {
+      return tExercises(`categories.${categoryKey}`)
+    } catch {
+      return categoryKey
+    }
+  }
 
   return (
     <div className="space-y-4">
-      {/* ─── 1. Quick KPI Cards ─────────────────────────────────────────────── */}
-      <div className="grid grid-cols-3 gap-3">
-        <div className="p-3.5 rounded-2xl bg-card border border-border shadow-xs flex flex-col justify-between">
-          <div className="flex items-center justify-between text-muted-foreground mb-1">
-            <span className="text-xs font-medium">{tHistory('totalWorkouts')}</span>
-            <div className="w-6 h-6 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
-              <Dumbbell className="h-3.5 w-3.5" />
-            </div>
-          </div>
-          <div>
-            <span className="text-2xl font-black text-foreground tracking-tight">
-              {summary.totalWorkouts}
-            </span>
-            <span className="text-xs text-muted-foreground ml-1">{tHistory('timesUnit')}</span>
-          </div>
+      {/* ─── Header & Time Range Filter ──────────────────────────────────── */}
+      <div className="flex items-center justify-between gap-2 p-1">
+        <div className="flex items-center gap-2">
+          <PieChart className="h-4 w-4 text-primary" />
+          <h2 className="text-sm font-bold text-foreground">
+            {tHistory('muscleDistribution')}
+          </h2>
         </div>
 
-        <div className="p-3.5 rounded-2xl bg-card border border-border shadow-xs flex flex-col justify-between">
-          <div className="flex items-center justify-between text-muted-foreground mb-1">
-            <span className="text-xs font-medium">{tHistory('activeDaysThisMonth')}</span>
-            <div className="w-6 h-6 rounded-lg bg-blue-500/10 text-blue-500 flex items-center justify-center">
-              <CalendarIcon className="h-3.5 w-3.5" />
-            </div>
-          </div>
-          <div>
-            <span className="text-2xl font-black text-foreground tracking-tight">
-              {summary.activeDaysThisMonth}
-            </span>
-            <span className="text-xs text-muted-foreground ml-1">{tHistory('workoutDayUnit')}</span>
-          </div>
-        </div>
-
-        <div className="p-3.5 rounded-2xl bg-card border border-border shadow-xs flex flex-col justify-between">
-          <div className="flex items-center justify-between text-muted-foreground mb-1">
-            <span className="text-xs font-medium">{tHistory('totalSetsCompleted')}</span>
-            <div className="w-6 h-6 rounded-lg bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
-              <Trophy className="h-3.5 w-3.5" />
-            </div>
-          </div>
-          <div>
-            <span className="text-2xl font-black text-foreground tracking-tight">
-              {summary.totalSets}
-            </span>
-            <span className="text-xs text-muted-foreground ml-1">{tHistory('sets')}</span>
-          </div>
+        {/* Time Range Segmented Control */}
+        <div className="inline-flex items-center p-0.5 rounded-xl bg-muted border border-border text-xs font-medium">
+          <button
+            type="button"
+            onClick={() => {
+              setTimeRange('week')
+              setActiveCategory(null)
+            }}
+            className={cn(
+              'px-2.5 py-1 rounded-lg transition-all',
+              timeRange === 'week'
+                ? 'bg-card text-foreground shadow-xs font-semibold'
+                : 'text-muted-foreground hover:text-foreground',
+            )}
+          >
+            {tHistory('timeRangeThisWeek')}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setTimeRange('month')
+              setActiveCategory(null)
+            }}
+            className={cn(
+              'px-2.5 py-1 rounded-lg transition-all',
+              timeRange === 'month'
+                ? 'bg-card text-foreground shadow-xs font-semibold'
+                : 'text-muted-foreground hover:text-foreground',
+            )}
+          >
+            {tHistory('timeRangeThisMonth')}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setTimeRange('all')
+              setActiveCategory(null)
+            }}
+            className={cn(
+              'px-2.5 py-1 rounded-lg transition-all',
+              timeRange === 'all'
+                ? 'bg-card text-foreground shadow-xs font-semibold'
+                : 'text-muted-foreground hover:text-foreground',
+            )}
+          >
+            {tHistory('timeRangeAll')}
+          </button>
         </div>
       </div>
 
-      {/* ─── 2. Weekly Consistency Bar Chart ───────────────────────────────── */}
-      <div className="p-4 rounded-2xl bg-card border border-border shadow-xs space-y-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <BarChart3 className="h-4 w-4 text-primary" />
-            <h2 className="text-sm font-bold text-foreground">
-              {tHistory('weeklyFrequency')}
-            </h2>
+      {/* ─── Donut Chart & Legend Card ────────────────────────────────────── */}
+      <div className="p-5 rounded-2xl bg-card border border-border shadow-xs">
+        {totalSets === 0 ? (
+          <div className="py-12 px-4 text-center space-y-2">
+            <Sparkles className="h-8 w-8 text-muted-foreground/30 mx-auto" />
+            <p className="text-xs text-muted-foreground max-w-xs mx-auto">
+              {tHistory('noDataInRange')}
+            </p>
           </div>
-          <span className="text-xs text-muted-foreground">
-            {tHistory('weeklyTarget', { target: 3 })}
-          </span>
-        </div>
-
-        {/* Bar chart grid */}
-        <div className="pt-2">
-          <div className="relative h-32 flex items-end justify-between gap-1.5 sm:gap-2 px-1 border-b border-border/80">
-            {/* Target Line: 3 days / week */}
-            <div
-              className="absolute left-0 right-0 border-b border-dashed border-primary/40 pointer-events-none flex items-center justify-end pr-1 z-0"
-              style={{ bottom: `${(3 / 7) * 100}%` }}
-            >
-              <span className="text-[10px] text-primary/70 font-medium bg-card px-1">
-                3 {tHistory('workoutDayUnit')}
-              </span>
-            </div>
-
-            {weeklyData.map((wk, idx) => {
-              const heightPct = Math.min(100, Math.max(8, (wk.count / 7) * 100))
-              const meetsTarget = wk.count >= 3
-              return (
-                <div
-                  key={idx}
-                  className="flex-1 flex flex-col items-center h-full justify-end group relative z-10"
-                >
-                  {/* Tooltip on hover */}
-                  <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute -top-8 px-2 py-0.5 rounded-lg bg-popover text-popover-foreground text-[10px] font-semibold shadow-md whitespace-nowrap pointer-events-none z-20 border border-border">
-                    {wk.count} {tHistory('workoutDayUnit')}
-                  </div>
-
-                  <span className="text-[10px] font-bold text-foreground mb-1">
-                    {wk.count > 0 ? wk.count : ''}
-                  </span>
-                  <div
-                    style={{ height: `${heightPct}%` }}
-                    className={cn(
-                      'w-full max-w-[28px] rounded-t-md transition-all duration-300',
-                      wk.count === 0
-                        ? 'bg-muted/40'
-                        : meetsTarget
-                          ? 'bg-primary group-hover:brightness-110 shadow-xs'
-                          : 'bg-primary/50 group-hover:bg-primary/70',
-                      wk.isCurrentWeek && 'ring-2 ring-primary ring-offset-1 ring-offset-card',
-                    )}
-                  />
-                </div>
-              )
-            })}
-          </div>
-
-          {/* Week Labels */}
-          <div className="flex justify-between gap-1.5 sm:gap-2 px-1 pt-1.5 text-[10px] text-muted-foreground font-medium">
-            {weeklyData.map((wk, idx) => (
-              <span
-                key={idx}
-                className={cn('flex-1 text-center truncate', wk.isCurrentWeek && 'text-primary font-bold')}
+        ) : (
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-6 sm:gap-8">
+            {/* SVG Donut Chart */}
+            <div className="relative w-48 h-48 flex-shrink-0">
+              <svg
+                viewBox="0 0 200 200"
+                className="w-full h-full transform -rotate-90 select-none"
               >
-                {wk.weekLabel}
-              </span>
-            ))}
-          </div>
-        </div>
-      </div>
+                {/* Background Ring */}
+                <circle
+                  cx="100"
+                  cy="100"
+                  r={RADIUS}
+                  className="stroke-muted/40"
+                  strokeWidth="22"
+                  fill="none"
+                />
 
-      {/* ─── 3. Muscle Group Training Distribution ──────────────────────────── */}
-      {categoryStats.length > 0 && (
-        <div className="p-4 rounded-2xl bg-card border border-border shadow-xs space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <PieChart className="h-4 w-4 text-primary" />
-              <h2 className="text-sm font-bold text-foreground">
-                {tHistory('muscleDistribution')}
-              </h2>
+                {/* Donut Segments */}
+                {donutSegments.map((segment) => {
+                  const isHovered = activeCategory === segment.category
+                  return (
+                    <circle
+                      key={segment.category}
+                      cx="100"
+                      cy="100"
+                      r={RADIUS}
+                      stroke={segment.color}
+                      strokeWidth={isHovered ? 26 : 22}
+                      strokeDasharray={segment.strokeDasharray}
+                      strokeDashoffset={segment.strokeDashoffset}
+                      fill="none"
+                      className="cursor-pointer transition-all duration-200"
+                      opacity={activeCategory && !isHovered ? 0.35 : 1}
+                      onMouseEnter={() => setActiveCategory(segment.category)}
+                      onMouseLeave={() => setActiveCategory(null)}
+                      onClick={() =>
+                        setActiveCategory(
+                          activeCategory === segment.category ? null : segment.category,
+                        )
+                      }
+                    />
+                  )
+                })}
+              </svg>
+
+              {/* Center Info Label */}
+              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center px-4">
+                {activeItem ? (
+                  <>
+                    <span className="text-xs font-semibold text-muted-foreground truncate max-w-[90px]">
+                      {getCategoryLabel(activeItem.category)}
+                    </span>
+                    <span className="text-xl font-black text-foreground tracking-tight">
+                      {activeItem.percentage}%
+                    </span>
+                    <span className="text-[10px] text-muted-foreground font-mono">
+                      {activeItem.count} {tHistory('sets')}
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <span className="text-[11px] font-medium text-muted-foreground">
+                      {tHistory('totalSets')}
+                    </span>
+                    <span className="text-2xl font-black text-foreground tracking-tight">
+                      {totalSets}
+                    </span>
+                    <span className="text-[10px] text-muted-foreground">
+                      {tHistory('sets')}
+                    </span>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* Muscle Groups Legend List */}
+            <div className="w-full sm:max-w-xs space-y-2">
+              {categoryStats.map((item) => {
+                const isHovered = activeCategory === item.category
+                return (
+                  <div
+                    key={item.category}
+                    className={cn(
+                      'flex items-center justify-between p-2 rounded-xl text-xs transition-colors cursor-pointer',
+                      isHovered
+                        ? 'bg-muted/80 shadow-2xs'
+                        : 'hover:bg-muted/40',
+                    )}
+                    onMouseEnter={() => setActiveCategory(item.category)}
+                    onMouseLeave={() => setActiveCategory(null)}
+                    onClick={() =>
+                      setActiveCategory(
+                        activeCategory === item.category ? null : item.category,
+                      )
+                    }
+                  >
+                    <div className="flex items-center gap-2">
+                      <span
+                        className="w-2.5 h-2.5 rounded-full flex-shrink-0 transition-transform"
+                        style={{
+                          backgroundColor: item.color,
+                          transform: isHovered ? 'scale(1.25)' : 'scale(1)',
+                        }}
+                      />
+                      <span className="font-semibold text-foreground">
+                        {getCategoryLabel(item.category)}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2 text-right font-mono">
+                      <span className="text-muted-foreground text-[11px]">
+                        {item.count} {tHistory('sets')}
+                      </span>
+                      <span className="font-bold text-foreground w-9">
+                        {item.percentage}%
+                      </span>
+                    </div>
+                  </div>
+                )
+              })}
             </div>
           </div>
-
-          <div className="space-y-3">
-            {categoryStats.map(({ category, count, percentage }) => {
-              const color = CATEGORY_COLORS[category] ?? CATEGORY_COLORS.other
-              let categoryLabel = category
-              try {
-                categoryLabel = tExercises(`categories.${category}`)
-              } catch {
-                categoryLabel = category
-              }
-
-              return (
-                <div key={category} className="space-y-1">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-semibold text-foreground flex items-center gap-1.5">
-                      <span className={cn('w-2 h-2 rounded-full', color.bar)} />
-                      {categoryLabel}
-                    </span>
-                    <span className="text-muted-foreground font-mono">
-                      {count} {tHistory('sets')} ({percentage}%)
-                    </span>
-                  </div>
-                  <div className="w-full h-2 rounded-full bg-muted overflow-hidden">
-                    <div
-                      style={{ width: `${percentage}%` }}
-                      className={cn('h-full rounded-full transition-all duration-500', color.bar)}
-                    />
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   )
 }

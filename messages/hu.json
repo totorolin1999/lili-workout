@@ -160,6 +160,10 @@
     "progressImprovement": "fejlődés a kezdetekhez képest",
     "notEnoughData": "Rögzítsd a gyakorlatot legalább 2-szer a grafikonhoz",
     "muscleDistribution": "Izomcsoportok eloszlása",
+    "timeRangeThisWeek": "Ezen a héten",
+    "timeRangeThisMonth": "Ebben a hónapban",
+    "totalSets": "Összes sorozat",
+    "noDataInRange": "Ebben az időszakban nem volt edzés",
     "workoutDayUnit": "nap",
     "timesUnit": "alkalom"
   },

@@ -160,6 +160,10 @@
     "progressImprovement": "vs First Session",
     "notEnoughData": "Log this exercise 2+ times to view trend chart",
     "muscleDistribution": "Muscle Group Distribution",
+    "timeRangeThisWeek": "This Week",
+    "timeRangeThisMonth": "This Month",
+    "totalSets": "Total Sets",
+    "noDataInRange": "No workouts recorded in this period",
     "workoutDayUnit": "days",
     "timesUnit": "times"
   },

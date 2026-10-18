@@ -160,6 +160,10 @@
     "progressImprovement": "較初次提升",
     "notEnoughData": "記錄 2 次以上此動作即可生成成長曲線圖",
     "muscleDistribution": "肌群訓練分佈",
+    "timeRangeThisWeek": "本週",
+    "timeRangeThisMonth": "本月",
+    "totalSets": "總組數",
+    "noDataInRange": "此期間內尚無訓練記錄",
     "workoutDayUnit": "天",
     "timesUnit": "次"
   },
