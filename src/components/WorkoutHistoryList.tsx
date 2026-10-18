@@ -44,7 +44,6 @@ export default function WorkoutHistoryList({
   const tHistory = useTranslations('history')
   const [workouts, setWorkouts] = useState(initialWorkouts)
   const [viewMode, setViewMode] = useState<'calendar' | 'list' | 'chart'>('calendar')
-  const [trendExerciseId, setTrendExerciseId] = useState<string | null>(null)
   const [selectedDate, setSelectedDate] = useState<string>(() => {
     // Default to most recent workout date if exists, or today
     if (initialWorkouts.length > 0) {
@@ -219,10 +218,6 @@ export default function WorkoutHistoryList({
                     isDeleting={deletingId === workout.id}
                     hideDateHeader={true}
                     indexInDay={index}
-                    onViewTrend={(exerciseId) => {
-                      setTrendExerciseId(exerciseId)
-                      setViewMode('chart')
-                    }}
                   />
                 ))}
               </div>
@@ -270,10 +265,6 @@ export default function WorkoutHistoryList({
               onDelete={handleDelete}
               isDeleting={deletingId === workout.id}
               hideDateHeader={false}
-              onViewTrend={(exerciseId) => {
-                setTrendExerciseId(exerciseId)
-                setViewMode('chart')
-              }}
             />
           ))}
         </div>
@@ -283,10 +274,7 @@ export default function WorkoutHistoryList({
       {viewMode === 'chart' && (
         <WorkoutAnalytics
           workouts={workouts}
-          exercises={combinedExercises}
           locale={locale}
-          selectedExerciseId={trendExerciseId}
-          onSelectExercise={setTrendExerciseId}
         />
       )}
     </div>
