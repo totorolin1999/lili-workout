@@ -6,6 +6,7 @@ import Link from 'next/link'
 import {
   Calendar as CalendarIcon,
   List as ListIcon,
+  TrendingUp,
   Dumbbell,
   Plus,
   Coffee,
@@ -18,6 +19,7 @@ import {
 } from '@/lib/actions/workout'
 import WorkoutCalendar from './WorkoutCalendar'
 import WorkoutCard, { formatDate } from './WorkoutCard'
+import WorkoutAnalytics from './WorkoutAnalytics'
 
 interface WorkoutHistoryListProps {
   initialWorkouts: WorkoutHistoryEntry[]
@@ -41,7 +43,8 @@ export default function WorkoutHistoryList({
 }: WorkoutHistoryListProps) {
   const tHistory = useTranslations('history')
   const [workouts, setWorkouts] = useState(initialWorkouts)
-  const [viewMode, setViewMode] = useState<'calendar' | 'list'>('calendar')
+  const [viewMode, setViewMode] = useState<'calendar' | 'list' | 'chart'>('calendar')
+  const [trendExerciseId, setTrendExerciseId] = useState<string | null>(null)
   const [selectedDate, setSelectedDate] = useState<string>(() => {
     // Default to most recent workout date if exists, or today
     if (initialWorkouts.length > 0) {
@@ -158,6 +161,19 @@ export default function WorkoutHistoryList({
             <ListIcon className="h-3.5 w-3.5" />
             <span>{tHistory('listView')}</span>
           </button>
+          <button
+            type="button"
+            onClick={() => setViewMode('chart')}
+            className={cn(
+              'flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold transition-all',
+              viewMode === 'chart'
+                ? 'bg-card text-foreground shadow-sm'
+                : 'text-muted-foreground hover:text-foreground',
+            )}
+          >
+            <TrendingUp className="h-3.5 w-3.5" />
+            <span>{tHistory('chartView')}</span>
+          </button>
         </div>
       </div>
 
@@ -203,6 +219,10 @@ export default function WorkoutHistoryList({
                     isDeleting={deletingId === workout.id}
                     hideDateHeader={true}
                     indexInDay={index}
+                    onViewTrend={(exerciseId) => {
+                      setTrendExerciseId(exerciseId)
+                      setViewMode('chart')
+                    }}
                   />
                 ))}
               </div>
@@ -250,9 +270,24 @@ export default function WorkoutHistoryList({
               onDelete={handleDelete}
               isDeleting={deletingId === workout.id}
               hideDateHeader={false}
+              onViewTrend={(exerciseId) => {
+                setTrendExerciseId(exerciseId)
+                setViewMode('chart')
+              }}
             />
           ))}
         </div>
+      )}
+
+      {/* 3. Analytics Chart View */}
+      {viewMode === 'chart' && (
+        <WorkoutAnalytics
+          workouts={workouts}
+          exercises={combinedExercises}
+          locale={locale}
+          selectedExerciseId={trendExerciseId}
+          onSelectExercise={setTrendExerciseId}
+        />
       )}
     </div>
   )

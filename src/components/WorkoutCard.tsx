@@ -13,6 +13,7 @@ import {
   CheckCircle2,
   Circle,
   Dumbbell,
+  TrendingUp,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import {
@@ -130,6 +131,7 @@ interface WorkoutCardProps {
   isDeleting: boolean
   hideDateHeader?: boolean
   indexInDay?: number
+  onViewTrend?: (exerciseId: string) => void
 }
 
 export default function WorkoutCard({
@@ -143,6 +145,7 @@ export default function WorkoutCard({
   isDeleting,
   hideDateHeader = false,
   indexInDay,
+  onViewTrend,
 }: WorkoutCardProps) {
   const tHistory = useTranslations('history')
   const tWorkout = useTranslations('workout')
@@ -290,10 +293,24 @@ export default function WorkoutCard({
                     className="rounded-xl border border-border/80 bg-card overflow-hidden"
                   >
                     {/* Exercise Name Header */}
-                    <div className="px-3.5 py-2 bg-muted/30 border-b border-border/60">
+                    <div className="flex items-center justify-between px-3.5 py-2 bg-muted/30 border-b border-border/60">
                       <h3 className="text-sm font-semibold text-foreground">
                         {group.exerciseName}
                       </h3>
+                      {onViewTrend && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            onViewTrend(group.exerciseId)
+                          }}
+                          className="inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:text-primary/80 transition-colors"
+                          title={tHistory('viewTrend')}
+                        >
+                          <TrendingUp className="h-3 w-3" />
+                          <span>{tHistory('viewTrend')}</span>
+                        </button>
+                      )}
                     </div>
 
                     {/* Sets list */}
