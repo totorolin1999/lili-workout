@@ -200,4 +200,4 @@ npm run dev
 
 ## 📄 授權條款 (License)
 
-本專案採私有授權或自訂條款 (Private Project)。
+本專案採用 [MIT License](LICENSE) 授權。歡迎自由學習、修改或部署個人版本。
