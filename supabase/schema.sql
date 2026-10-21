@@ -199,3 +199,24 @@ INSERT INTO exercises (name_hu, name_en, name_zh, category) VALUES
   ('Kerékpározás', 'Cycling', '騎自行車', 'cardio'),
   ('Ugrókötél', 'Jump Rope', '跳繩', 'cardio')
 ON CONFLICT DO NOTHING;
+
+
+-- ─────────────────────────────────────────────────────────────
+-- PERMISSIONS & GRANTS
+-- Explicit table grants for Data API (PostgREST, supabase-js).
+-- Required for tables created from October 30, 2026 onwards.
+-- ─────────────────────────────────────────────────────────────
+
+-- Exercises
+GRANT SELECT ON TABLE exercises TO anon;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE exercises TO authenticated;
+GRANT ALL ON TABLE exercises TO service_role;
+
+-- Workouts
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE workouts TO authenticated;
+GRANT ALL ON TABLE workouts TO service_role;
+
+-- Workout Sets
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE workout_sets TO authenticated;
+GRANT ALL ON TABLE workout_sets TO service_role;
+
