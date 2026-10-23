@@ -15,6 +15,8 @@ import {
   Check,
   Tag as TagIcon,
   X,
+  ArrowUp,
+  ArrowDown,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import {
@@ -184,6 +186,7 @@ export default function WorkoutEditForm({
     fields: exerciseGroupFields,
     append: appendGroup,
     remove: removeGroup,
+    move: moveGroup,
   } = useFieldArray({
     control: form.control,
     name: 'exerciseGroups',
@@ -353,6 +356,7 @@ export default function WorkoutEditForm({
           <ExerciseGroupCard
             key={groupField.id}
             groupIdx={groupIdx}
+            totalGroups={exerciseGroupFields.length}
             form={form}
             exercises={exercises}
             locale={locale}
@@ -361,6 +365,8 @@ export default function WorkoutEditForm({
             tCommon={tCommon}
             onOpenPicker={() => handleOpenGroupPicker(groupIdx)}
             onRemoveGroup={() => removeGroup(groupIdx)}
+            onMoveUp={() => moveGroup(groupIdx, groupIdx - 1)}
+            onMoveDown={() => moveGroup(groupIdx, groupIdx + 1)}
           />
         ))}
       </div>
@@ -450,6 +456,7 @@ export default function WorkoutEditForm({
 
 interface ExerciseGroupCardProps {
   groupIdx: number
+  totalGroups: number
   form: ReturnType<typeof useForm<WorkoutEditFormValues>>
   exercises: Exercise[]
   locale: Locale
@@ -458,10 +465,13 @@ interface ExerciseGroupCardProps {
   tCommon: ReturnType<typeof useTranslations<'common'>>
   onOpenPicker: () => void
   onRemoveGroup: () => void
+  onMoveUp: () => void
+  onMoveDown: () => void
 }
 
 function ExerciseGroupCard({
   groupIdx,
+  totalGroups,
   form,
   exercises,
   locale,
@@ -470,6 +480,8 @@ function ExerciseGroupCard({
   tCommon,
   onOpenPicker,
   onRemoveGroup,
+  onMoveUp,
+  onMoveDown,
 }: ExerciseGroupCardProps) {
   const [isCollapsed, setIsCollapsed] = useState(false)
 
@@ -722,26 +734,48 @@ function ExerciseGroupCard({
           )}
         </div>
 
-        <button
-          type="button"
-          onClick={() => setIsCollapsed((p) => !p)}
-          className="p-1 rounded hover:bg-muted transition-colors text-muted-foreground"
-          aria-label={isCollapsed ? tCommon('expand') : tCommon('collapse')}
-        >
-          {isCollapsed ? (
-            <ChevronDown className="h-3.5 w-3.5" />
-          ) : (
-            <ChevronUp className="h-3.5 w-3.5" />
-          )}
-        </button>
-        <button
-          type="button"
-          onClick={onRemoveGroup}
-          className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
-          aria-label={t('deleteSet')}
-        >
-          <Trash2 className="h-3.5 w-3.5" />
-        </button>
+        <div className="flex items-center gap-0.5 shrink-0">
+          <button
+            type="button"
+            onClick={onMoveUp}
+            disabled={groupIdx === 0}
+            className="p-1 rounded hover:bg-muted transition-colors text-muted-foreground hover:text-foreground disabled:opacity-25 disabled:hover:bg-transparent disabled:cursor-not-allowed"
+            aria-label={t('moveUp')}
+            title={t('moveUp')}
+          >
+            <ArrowUp className="h-3.5 w-3.5" />
+          </button>
+          <button
+            type="button"
+            onClick={onMoveDown}
+            disabled={groupIdx === totalGroups - 1}
+            className="p-1 rounded hover:bg-muted transition-colors text-muted-foreground hover:text-foreground disabled:opacity-25 disabled:hover:bg-transparent disabled:cursor-not-allowed"
+            aria-label={t('moveDown')}
+            title={t('moveDown')}
+          >
+            <ArrowDown className="h-3.5 w-3.5" />
+          </button>
+          <button
+            type="button"
+            onClick={() => setIsCollapsed((p) => !p)}
+            className="p-1 rounded hover:bg-muted transition-colors text-muted-foreground"
+            aria-label={isCollapsed ? tCommon('expand') : tCommon('collapse')}
+          >
+            {isCollapsed ? (
+              <ChevronDown className="h-3.5 w-3.5" />
+            ) : (
+              <ChevronUp className="h-3.5 w-3.5" />
+            )}
+          </button>
+          <button
+            type="button"
+            onClick={onRemoveGroup}
+            className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+            aria-label={t('deleteSet')}
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </button>
+        </div>
       </div>
 
       {/* Sets */}

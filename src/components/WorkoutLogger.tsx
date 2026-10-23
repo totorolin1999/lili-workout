@@ -6,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useTranslations, useLocale } from 'next-intl'
 import {
-  Plus, Trash2, ChevronDown, ChevronUp, Save, Dumbbell, Check, Tag as TagIcon, X
+  Plus, Trash2, ChevronDown, ChevronUp, Save, Dumbbell, Check, Tag as TagIcon, X, ArrowUp, ArrowDown
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import {
@@ -173,7 +173,12 @@ export default function WorkoutLogger({ exercises, initialDate }: WorkoutLoggerP
     })
   }, [form, initialDate])
 
-  const { fields: exerciseGroupFields, append: appendGroup, remove: removeGroup } = useFieldArray({
+  const {
+    fields: exerciseGroupFields,
+    append: appendGroup,
+    remove: removeGroup,
+    move: moveGroup,
+  } = useFieldArray({
     control: form.control,
     name: 'exerciseGroups',
   })
@@ -364,6 +369,7 @@ export default function WorkoutLogger({ exercises, initialDate }: WorkoutLoggerP
             <ExerciseGroupCard
               key={groupField.id}
               groupIdx={groupIdx}
+              totalGroups={exerciseGroupFields.length}
               form={form}
               exercises={exercises}
               locale={locale}
@@ -374,6 +380,8 @@ export default function WorkoutLogger({ exercises, initialDate }: WorkoutLoggerP
               onOpenPicker={() => handleOpenGroupPicker(groupIdx)}
               onExerciseChange={(id) => fetchLastSession(id)}
               onRemoveGroup={() => removeGroup(groupIdx)}
+              onMoveUp={() => moveGroup(groupIdx, groupIdx - 1)}
+              onMoveDown={() => moveGroup(groupIdx, groupIdx + 1)}
             />
           ))}
         </div>
@@ -446,6 +454,7 @@ export default function WorkoutLogger({ exercises, initialDate }: WorkoutLoggerP
 
 interface ExerciseGroupCardProps {
   groupIdx: number
+  totalGroups: number
   form: ReturnType<typeof useForm<WorkoutFormValues>>
   exercises: Exercise[]
   locale: Locale
@@ -456,11 +465,13 @@ interface ExerciseGroupCardProps {
   onOpenPicker: () => void
   onExerciseChange: (id: string) => void
   onRemoveGroup: () => void
+  onMoveUp: () => void
+  onMoveDown: () => void
 }
 
 function ExerciseGroupCard({
-  groupIdx, form, exercises, locale, t, tEx, tCommon, lastSession,
-  onOpenPicker, onExerciseChange, onRemoveGroup,
+  groupIdx, totalGroups, form, exercises, locale, t, tEx, tCommon, lastSession,
+  onOpenPicker, onExerciseChange, onRemoveGroup, onMoveUp, onMoveDown,
 }: ExerciseGroupCardProps) {
   const [isCollapsed, setIsCollapsed] = useState(false)
 
@@ -706,22 +717,44 @@ function ExerciseGroupCard({
           )}
         </div>
 
-        <button
-          type="button"
-          onClick={() => setIsCollapsed((p) => !p)}
-          className="p-1.5 rounded-lg hover:bg-muted transition-colors text-muted-foreground"
-          aria-label={isCollapsed ? tCommon('expand') : tCommon('collapse')}
-        >
-          {isCollapsed ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
-        </button>
-        <button
-          type="button"
-          onClick={onRemoveGroup}
-          className="p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
-          aria-label={t('deleteSet')}
-        >
-          <Trash2 className="h-4 w-4" />
-        </button>
+        <div className="flex items-center gap-0.5 shrink-0">
+          <button
+            type="button"
+            onClick={onMoveUp}
+            disabled={groupIdx === 0}
+            className="p-1.5 rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground disabled:opacity-20 disabled:hover:bg-transparent disabled:hover:text-muted-foreground disabled:cursor-not-allowed"
+            aria-label={t('moveUp')}
+            title={t('moveUp')}
+          >
+            <ArrowUp className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            onClick={onMoveDown}
+            disabled={groupIdx === totalGroups - 1}
+            className="p-1.5 rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground disabled:opacity-20 disabled:hover:bg-transparent disabled:hover:text-muted-foreground disabled:cursor-not-allowed"
+            aria-label={t('moveDown')}
+            title={t('moveDown')}
+          >
+            <ArrowDown className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            onClick={() => setIsCollapsed((p) => !p)}
+            className="p-1.5 rounded-lg hover:bg-muted transition-colors text-muted-foreground"
+            aria-label={isCollapsed ? tCommon('expand') : tCommon('collapse')}
+          >
+            {isCollapsed ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
+          </button>
+          <button
+            type="button"
+            onClick={onRemoveGroup}
+            className="p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+            aria-label={t('deleteSet')}
+          >
+            <Trash2 className="h-4 w-4" />
+          </button>
+        </div>
       </div>
 
       {/* Last session hint */}

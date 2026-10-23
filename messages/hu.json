@@ -57,6 +57,8 @@
     "notes": "Jegyzet",
     "completed": "Kész",
     "deleteSet": "Törlés",
+    "moveUp": "Mozgatás fel",
+    "moveDown": "Mozgatás le",
     "noExercises": "Még nincsenek gyakorlatok hozzáadva.",
     "formVariation": "Változat / Címke",
     "selectTag": "Válassz változatot",

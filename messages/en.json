@@ -57,6 +57,8 @@
     "notes": "Notes",
     "completed": "Done",
     "deleteSet": "Delete",
+    "moveUp": "Move up",
+    "moveDown": "Move down",
     "noExercises": "No exercises added yet.",
     "formVariation": "Variation / Tag",
     "selectTag": "Select variation",
