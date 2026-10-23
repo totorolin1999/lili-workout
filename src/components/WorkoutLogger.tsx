@@ -6,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useTranslations, useLocale } from 'next-intl'
 import {
-  Plus, Trash2, ChevronDown, ChevronUp, Save, Dumbbell, Check, Tag as TagIcon, X, ArrowUp, ArrowDown
+  Plus, Trash2, ChevronDown, ChevronUp, Save, Dumbbell, Check, Tag as TagIcon, X, GripVertical
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import {
@@ -151,6 +151,58 @@ export default function WorkoutLogger({ exercises, initialDate }: WorkoutLoggerP
   // Modal state
   const [isPickerOpen, setIsPickerOpen] = useState(false)
   const [pickerTargetGroupIdx, setPickerTargetGroupIdx] = useState<number | 'new' | null>(null)
+
+  // Drag and drop state
+  const [draggingGroupIndex, setDraggingGroupIndex] = useState<number | null>(null)
+  const [dragOverGroupIndex, setDragOverGroupIndex] = useState<number | null>(null)
+
+  function handleDragStart(index: number) {
+    setDraggingGroupIndex(index)
+  }
+
+  function handleDragOver(index: number) {
+    if (dragOverGroupIndex !== index) {
+      setDragOverGroupIndex(index)
+    }
+  }
+
+  function handleDrop(targetIndex: number) {
+    if (draggingGroupIndex !== null && draggingGroupIndex !== targetIndex) {
+      moveGroup(draggingGroupIndex, targetIndex)
+    }
+    setDraggingGroupIndex(null)
+    setDragOverGroupIndex(null)
+  }
+
+  function handleDragEnd() {
+    setDraggingGroupIndex(null)
+    setDragOverGroupIndex(null)
+  }
+
+  function handleTouchStart(index: number) {
+    setDraggingGroupIndex(index)
+  }
+
+  function handleTouchMove(e: React.TouchEvent) {
+    const touch = e.touches[0]
+    if (!touch) return
+    const el = document.elementFromPoint(touch.clientX, touch.clientY)
+    const card = el?.closest('[data-group-card-idx]')
+    if (card) {
+      const idx = Number(card.getAttribute('data-group-card-idx'))
+      if (!isNaN(idx) && idx !== dragOverGroupIndex) {
+        setDragOverGroupIndex(idx)
+      }
+    }
+  }
+
+  function handleTouchEnd() {
+    if (draggingGroupIndex !== null && dragOverGroupIndex !== null && draggingGroupIndex !== dragOverGroupIndex) {
+      moveGroup(draggingGroupIndex, dragOverGroupIndex)
+    }
+    setDraggingGroupIndex(null)
+    setDragOverGroupIndex(null)
+  }
 
   const form = useForm<WorkoutFormValues>({
     resolver: zodResolver(WorkoutFormSchema),
@@ -377,11 +429,20 @@ export default function WorkoutLogger({ exercises, initialDate }: WorkoutLoggerP
               tEx={tEx}
               tCommon={tCommon}
               lastSession={lastSessions[watchedGroups[groupIdx]?.exercise_id] ?? null}
+              isBeingDragged={draggingGroupIndex === groupIdx}
+              isDropTarget={dragOverGroupIndex === groupIdx && draggingGroupIndex !== groupIdx}
               onOpenPicker={() => handleOpenGroupPicker(groupIdx)}
               onExerciseChange={(id) => fetchLastSession(id)}
               onRemoveGroup={() => removeGroup(groupIdx)}
               onMoveUp={() => moveGroup(groupIdx, groupIdx - 1)}
               onMoveDown={() => moveGroup(groupIdx, groupIdx + 1)}
+              onDragStart={handleDragStart}
+              onDragOver={handleDragOver}
+              onDrop={handleDrop}
+              onDragEnd={handleDragEnd}
+              onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
             />
           ))}
         </div>
@@ -462,16 +523,28 @@ interface ExerciseGroupCardProps {
   tEx: ReturnType<typeof useTranslations<'exercises'>>
   tCommon: ReturnType<typeof useTranslations<'common'>>
   lastSession: LastSession | null
+  isBeingDragged?: boolean
+  isDropTarget?: boolean
   onOpenPicker: () => void
   onExerciseChange: (id: string) => void
   onRemoveGroup: () => void
   onMoveUp: () => void
   onMoveDown: () => void
+  onDragStart?: (index: number) => void
+  onDragOver?: (index: number) => void
+  onDrop?: (index: number) => void
+  onDragEnd?: () => void
+  onTouchStart?: (index: number) => void
+  onTouchMove?: (e: React.TouchEvent) => void
+  onTouchEnd?: () => void
 }
 
 function ExerciseGroupCard({
   groupIdx, totalGroups, form, exercises, locale, t, tEx, tCommon, lastSession,
+  isBeingDragged, isDropTarget,
   onOpenPicker, onExerciseChange, onRemoveGroup, onMoveUp, onMoveDown,
+  onDragStart, onDragOver, onDrop, onDragEnd,
+  onTouchStart, onTouchMove, onTouchEnd,
 }: ExerciseGroupCardProps) {
   const [isCollapsed, setIsCollapsed] = useState(false)
 
@@ -564,9 +637,80 @@ function ExerciseGroupCard({
   }
 
   return (
-    <div className="rounded-2xl border border-border bg-card overflow-hidden shadow-sm">
+    <div
+      data-group-card-idx={groupIdx}
+      draggable
+      onDragStart={(e) => {
+        const target = e.target as HTMLElement
+        if (!target.closest('[data-drag-handle="true"]')) {
+          e.preventDefault()
+          return
+        }
+        e.dataTransfer.effectAllowed = 'move'
+        e.dataTransfer.setData('text/plain', String(groupIdx))
+        onDragStart?.(groupIdx)
+      }}
+      onDragOver={(e) => {
+        e.preventDefault()
+        e.dataTransfer.dropEffect = 'move'
+        onDragOver?.(groupIdx)
+      }}
+      onDrop={(e) => {
+        e.preventDefault()
+        onDrop?.(groupIdx)
+      }}
+      onDragEnd={() => {
+        onDragEnd?.()
+      }}
+      className={cn(
+        'rounded-2xl border bg-card overflow-hidden shadow-sm transition-all duration-150',
+        isBeingDragged && 'opacity-40 border-dashed border-primary scale-[0.99]',
+        isDropTarget && 'ring-2 ring-primary ring-offset-2 ring-offset-background border-primary',
+        !isBeingDragged && !isDropTarget && 'border-border',
+      )}
+    >
       {/* Group header */}
-      <div className="flex items-center gap-2 px-4 py-3 bg-muted/40 border-b border-border/60">
+      <div className="flex items-center gap-2 px-3 sm:px-4 py-3 bg-muted/40 border-b border-border/60">
+        {/* Reorder controls (Drag handle + Up/Down arrows) */}
+        <div className="flex items-center gap-0.5 shrink-0 -ml-1 mr-0.5">
+          {/* Drag handle */}
+          <div
+            data-drag-handle="true"
+            className="p-1 rounded cursor-grab active:cursor-grabbing hover:bg-muted text-muted-foreground/50 hover:text-foreground touch-none select-none transition-colors"
+            title={t('dragToReorder')}
+            aria-label={t('dragToReorder')}
+            onTouchStart={() => onTouchStart?.(groupIdx)}
+            onTouchMove={(e) => onTouchMove?.(e)}
+            onTouchEnd={() => onTouchEnd?.()}
+          >
+            <GripVertical className="h-4 w-4" />
+          </div>
+
+          {/* Up / Down arrows (vertical compact stepper) */}
+          <div className="flex flex-col -space-y-0.5">
+            <button
+              type="button"
+              onClick={onMoveUp}
+              disabled={groupIdx === 0}
+              className="p-0.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground disabled:opacity-20 disabled:hover:bg-transparent disabled:cursor-not-allowed transition-colors"
+              aria-label={t('moveUp')}
+              title={t('moveUp')}
+            >
+              <ChevronUp className="h-3 w-3" />
+            </button>
+            <button
+              type="button"
+              onClick={onMoveDown}
+              disabled={groupIdx === totalGroups - 1}
+              className="p-0.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground disabled:opacity-20 disabled:hover:bg-transparent disabled:cursor-not-allowed transition-colors"
+              aria-label={t('moveDown')}
+              title={t('moveDown')}
+            >
+              <ChevronDown className="h-3 w-3" />
+            </button>
+          </div>
+        </div>
+
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             {/* Clickable Exercise Name button (opens categorized modal) */}
@@ -717,32 +861,13 @@ function ExerciseGroupCard({
           )}
         </div>
 
-        <div className="flex items-center gap-0.5 shrink-0">
-          <button
-            type="button"
-            onClick={onMoveUp}
-            disabled={groupIdx === 0}
-            className="p-1.5 rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground disabled:opacity-20 disabled:hover:bg-transparent disabled:hover:text-muted-foreground disabled:cursor-not-allowed"
-            aria-label={t('moveUp')}
-            title={t('moveUp')}
-          >
-            <ArrowUp className="h-4 w-4" />
-          </button>
-          <button
-            type="button"
-            onClick={onMoveDown}
-            disabled={groupIdx === totalGroups - 1}
-            className="p-1.5 rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground disabled:opacity-20 disabled:hover:bg-transparent disabled:hover:text-muted-foreground disabled:cursor-not-allowed"
-            aria-label={t('moveDown')}
-            title={t('moveDown')}
-          >
-            <ArrowDown className="h-4 w-4" />
-          </button>
+        <div className="flex items-center gap-1 shrink-0 ml-auto">
           <button
             type="button"
             onClick={() => setIsCollapsed((p) => !p)}
             className="p-1.5 rounded-lg hover:bg-muted transition-colors text-muted-foreground"
             aria-label={isCollapsed ? tCommon('expand') : tCommon('collapse')}
+            title={isCollapsed ? tCommon('expand') : tCommon('collapse')}
           >
             {isCollapsed ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
           </button>
@@ -751,6 +876,7 @@ function ExerciseGroupCard({
             onClick={onRemoveGroup}
             className="p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
             aria-label={t('deleteSet')}
+            title={t('deleteSet')}
           >
             <Trash2 className="h-4 w-4" />
           </button>

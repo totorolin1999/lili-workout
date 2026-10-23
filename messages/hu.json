@@ -59,6 +59,7 @@
     "deleteSet": "Törlés",
     "moveUp": "Mozgatás fel",
     "moveDown": "Mozgatás le",
+    "dragToReorder": "Húzd az átrendezéshez",
     "noExercises": "Még nincsenek gyakorlatok hozzáadva.",
     "formVariation": "Változat / Címke",
     "selectTag": "Válassz változatot",

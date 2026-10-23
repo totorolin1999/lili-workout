@@ -59,6 +59,7 @@
     "deleteSet": "刪除",
     "moveUp": "向上移動",
     "moveDown": "向下移動",
+    "dragToReorder": "拖曳調整順序",
     "noExercises": "尚未新增動作。",
     "formVariation": "動作細節 / 形式",
     "selectTag": "選擇形式",

@@ -59,6 +59,7 @@
     "deleteSet": "Delete",
     "moveUp": "Move up",
     "moveDown": "Move down",
+    "dragToReorder": "Drag to reorder",
     "noExercises": "No exercises added yet.",
     "formVariation": "Variation / Tag",
     "selectTag": "Select variation",
