@@ -6,6 +6,7 @@ import { Search, X, Check, Dumbbell } from 'lucide-react'
 import {
   getExerciseDisplayName,
   getExerciseCalculationType,
+  getEffectiveExerciseTags,
   type Exercise,
   type Locale,
   type CalculationType,
@@ -88,13 +89,16 @@ export default function ExerciseSelectorModal({
       const nameZh = (ex.name_zh ?? '').toLowerCase()
       const displayName = getExerciseDisplayName(ex, locale).toLowerCase()
       const catName = categoryLabel[ex.category as Category]?.toLowerCase() ?? ''
+      const tags = getEffectiveExerciseTags(ex, locale)
+      const matchesTag = tags.some((t) => t.toLowerCase().includes(q))
 
       return (
         displayName.includes(q) ||
         nameZh.includes(q) ||
         nameEn.includes(q) ||
         nameHu.includes(q) ||
-        catName.includes(q)
+        catName.includes(q) ||
+        matchesTag
       )
     })
   }, [exercises, search, selectedCategory, locale, categoryLabel])
@@ -221,6 +225,7 @@ export default function ExerciseSelectorModal({
                     const isSelected = ex.id === selectedExerciseId
                     const calcType = getExerciseCalculationType(ex)
                     const displayName = getExerciseDisplayName(ex, locale)
+                    const tags = getEffectiveExerciseTags(ex, locale)
 
                     return (
                       <button
@@ -237,14 +242,33 @@ export default function ExerciseSelectorModal({
                             : 'bg-background hover:bg-muted/60 border-border/80 text-foreground',
                         )}
                       >
-                        <div className="flex items-center gap-2 min-w-0 pr-2">
-                          <span className="font-semibold text-sm truncate">
-                            {displayName}
-                          </span>
-                          {isSelected && <Check className="h-4 w-4 text-primary flex-shrink-0" />}
+                        <div className="flex flex-col gap-1 min-w-0 pr-2">
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold text-sm truncate">
+                              {displayName}
+                            </span>
+                            {isSelected && <Check className="h-4 w-4 text-primary flex-shrink-0" />}
+                          </div>
+                          {tags.length > 0 && (
+                            <div className="flex items-center gap-1 flex-wrap">
+                              {tags.slice(0, 4).map((tag) => (
+                                <span
+                                  key={tag}
+                                  className="text-[10px] px-1.5 py-0.2 rounded-md bg-muted text-muted-foreground"
+                                >
+                                  {tag}
+                                </span>
+                              ))}
+                              {tags.length > 4 && (
+                                <span className="text-[10px] text-muted-foreground/70">
+                                  +{tags.length - 4}
+                                </span>
+                              )}
+                            </div>
+                          )}
                         </div>
 
-                        <span className="text-[11px] px-2 py-0.5 rounded-md bg-muted text-muted-foreground font-medium flex-shrink-0">
+                        <span className="text-[11px] px-2 py-0.5 rounded-md bg-muted text-muted-foreground font-medium flex-shrink-0 self-start mt-0.5">
                           {calcTypeLabel[calcType]}
                         </span>
                       </button>

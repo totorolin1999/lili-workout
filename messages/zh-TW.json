@@ -58,6 +58,10 @@
     "completed": "完成",
     "deleteSet": "刪除",
     "noExercises": "尚未新增動作。",
+    "formVariation": "動作細節 / 形式",
+    "selectTag": "選擇形式",
+    "addCustomTag": "+ 自訂形式",
+    "tagPlaceholder": "動作細節（例：保加利亞）",
     "calculationType": {
       "label": "計算方式",
       "weight_reps": "重量 + 次數",
@@ -89,6 +93,10 @@
     "categoryLabel": "分類",
     "selectCategory": "選擇分類...",
     "calculationTypeLabel": "計算方式",
+    "tagsLabel": "標籤 / 動作細節",
+    "tagsPlaceholder": "以逗號分隔多個標籤（例：保加利亞, 後跨）",
+    "addTag": "新增標籤",
+    "enterTagPlaceholder": "輸入新標籤...",
     "calculationTypes": {
       "weight_reps": "重量 + 次數",
       "reps": "僅次數",

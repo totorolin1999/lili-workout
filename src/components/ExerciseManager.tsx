@@ -5,17 +5,24 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useTranslations } from 'next-intl'
-import { Plus, ChevronDown, ChevronUp, Pencil, Trash2, Dumbbell } from 'lucide-react'
+import { Plus, ChevronDown, ChevronUp, Pencil, Trash2, Dumbbell, Tag as TagIcon, X, Check } from 'lucide-react'
 import {
   getExerciseDisplayName,
   getPrimaryNameField,
   getExerciseCalculationType,
+  getEffectiveExerciseTags,
   CALCULATION_TYPES,
   type Exercise,
   type Locale,
   type CalculationType,
 } from '@/lib/exercises'
-import { createExercise, updateExercise, deleteExercise } from '@/lib/actions/exercise'
+import {
+  createExercise,
+  updateExercise,
+  deleteExercise,
+  addExerciseTag,
+  removeExerciseTag,
+} from '@/lib/actions/exercise'
 
 // ─── Types & Schema ──────────────────────────────────────────────────────────
 
@@ -28,6 +35,7 @@ const ExerciseFormSchema = z.object({
   name_zh: z.string().max(200).optional(),
   category: z.enum(CATEGORIES),
   calculation_type: z.enum(CALCULATION_TYPES as unknown as [CalculationType, ...CalculationType[]]),
+  tags_text: z.string().optional(),
 }).refine((d) => d.name_hu || d.name_en || d.name_zh, {
   message: 'At least one name must be provided',
 })
@@ -50,11 +58,23 @@ export default function ExerciseManager({ exercises: initialExercises, locale }:
   const [showTranslations, setShowTranslations] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  // Track inline tag adding state per exercise ID
+  const [addingTagForId, setAddingTagForId] = useState<string | null>(null)
+  const [newTagInput, setNewTagInput] = useState('')
+  const [tagActionPending, setTagActionPending] = useState(false)
+
   const primaryField = getPrimaryNameField(locale)
 
   const form = useForm<ExerciseFormValues>({
     resolver: zodResolver(ExerciseFormSchema),
-    defaultValues: { name_hu: '', name_en: '', name_zh: '', category: 'legs', calculation_type: 'weight_reps' },
+    defaultValues: {
+      name_hu: '',
+      name_en: '',
+      name_zh: '',
+      category: 'legs',
+      calculation_type: 'weight_reps',
+      tags_text: '',
+    },
   })
 
   const categoryLabel: Record<Category, string> = {
@@ -77,19 +97,28 @@ export default function ExerciseManager({ exercises: initialExercises, locale }:
   }
 
   function startNew() {
-    form.reset({ name_hu: '', name_en: '', name_zh: '', category: 'legs', calculation_type: 'weight_reps' })
+    form.reset({
+      name_hu: '',
+      name_en: '',
+      name_zh: '',
+      category: 'legs',
+      calculation_type: 'weight_reps',
+      tags_text: '',
+    })
     setEditingId(null)
     setShowForm(true)
     setError(null)
   }
 
   function startEdit(ex: Exercise) {
+    const existingTags = ex.tags ?? []
     form.reset({
       name_hu: ex.name_hu ?? '',
       name_en: ex.name_en ?? '',
       name_zh: ex.name_zh ?? '',
       category: ex.category as Category,
       calculation_type: getExerciseCalculationType(ex),
+      tags_text: existingTags.join(', '),
     })
     setEditingId(ex.id)
     setShowForm(true)
@@ -99,12 +128,18 @@ export default function ExerciseManager({ exercises: initialExercises, locale }:
   function onSubmit(values: ExerciseFormValues) {
     setError(null)
     startTransition(async () => {
+      const parsedTags = (values.tags_text ?? '')
+        .split(/[,，、]+/)
+        .map((t) => t.trim())
+        .filter(Boolean)
+
       const payload = {
         name_hu: values.name_hu || null,
         name_en: values.name_en || null,
         name_zh: values.name_zh || null,
         category: values.category,
         calculation_type: values.calculation_type,
+        tags: parsedTags,
       }
 
       if (editingId) {
@@ -143,6 +178,59 @@ export default function ExerciseManager({ exercises: initialExercises, locale }:
     })
   }
 
+  async function handleAddTag(exerciseId: string) {
+    const tag = newTagInput.trim()
+    if (!tag) {
+      setAddingTagForId(null)
+      return
+    }
+
+    setTagActionPending(true)
+    // Optimistic update
+    setExercises((prev) =>
+      prev.map((ex) => {
+        if (ex.id === exerciseId) {
+          const current = ex.tags ?? []
+          if (!current.includes(tag)) {
+            return { ...ex, tags: [...current, tag] }
+          }
+        }
+        return ex
+      }),
+    )
+
+    setNewTagInput('')
+    setAddingTagForId(null)
+
+    const res = await addExerciseTag(exerciseId, tag)
+    if (res.error) {
+      setError(res.error)
+    }
+    setTagActionPending(false)
+  }
+
+  async function handleRemoveTag(exerciseId: string, tag: string) {
+    setTagActionPending(true)
+    // Optimistic update
+    setExercises((prev) =>
+      prev.map((ex) => {
+        if (ex.id === exerciseId) {
+          return {
+            ...ex,
+            tags: (ex.tags ?? []).filter((t) => t !== tag),
+          }
+        }
+        return ex
+      }),
+    )
+
+    const res = await removeExerciseTag(exerciseId, tag)
+    if (res.error) {
+      setError(res.error)
+    }
+    setTagActionPending(false)
+  }
+
   // Group by category
   const grouped = exercises.reduce<Record<string, Exercise[]>>((acc, ex) => {
     const cat = ex.category || 'other'
@@ -158,7 +246,7 @@ export default function ExerciseManager({ exercises: initialExercises, locale }:
         <button
           onClick={startNew}
           className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-primary text-primary-foreground
-                     text-sm font-medium hover:bg-primary/90 transition-colors"
+                     text-sm font-medium hover:bg-primary/90 transition-colors shadow-sm"
         >
           <Plus className="h-4 w-4" />
           {t('newExercise')}
@@ -167,7 +255,7 @@ export default function ExerciseManager({ exercises: initialExercises, locale }:
 
       {/* Exercise Form */}
       {showForm && (
-        <div className="rounded-2xl border border-border bg-card p-4 space-y-3">
+        <div className="rounded-2xl border border-border bg-card p-4 space-y-3 shadow-sm">
           <h2 className="text-sm font-semibold text-foreground">
             {editingId ? t('editExercise') : t('newExercise')}
           </h2>
@@ -226,6 +314,17 @@ export default function ExerciseManager({ exercises: initialExercises, locale }:
                 ))}
               </select>
             </div>
+          </div>
+
+          {/* Tags input */}
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-foreground">{t('tagsLabel')}</label>
+            <input
+              {...form.register('tags_text')}
+              placeholder={t('tagsPlaceholder')}
+              className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm
+                         focus:outline-none focus:ring-2 focus:ring-primary"
+            />
           </div>
 
           {/* Optional translations toggle */}
@@ -313,44 +412,143 @@ export default function ExerciseManager({ exercises: initialExercises, locale }:
               <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-1">
                 {categoryLabel[cat]}
               </h2>
-              <div className="space-y-1">
-                {grouped[cat].map((ex) => (
-                  <div
-                    key={ex.id}
-                    className="flex items-center justify-between px-4 py-3 rounded-xl
-                               bg-card border border-border"
-                  >
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-sm font-medium text-foreground">
-                        {getExerciseDisplayName(ex, locale)}
-                      </span>
-                      <span className="text-[11px] px-2 py-0.5 rounded-md bg-muted text-muted-foreground font-normal">
-                        {calcTypeLabel[getExerciseCalculationType(ex)]}
-                      </span>
-                    </div>
-                    {/* Only show edit/delete for user's own exercises */}
-                    {ex.user_id && (
-                      <div className="flex items-center gap-1">
-                        <button
-                          onClick={() => startEdit(ex)}
-                          className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground
-                                     hover:text-foreground transition-colors"
-                          aria-label={t('editExercise')}
-                        >
-                          <Pencil className="h-3.5 w-3.5" />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(ex.id)}
-                          className="p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground
-                                     hover:text-destructive transition-colors"
-                          aria-label={t('deleteExercise')}
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
+              <div className="space-y-2">
+                {grouped[cat].map((ex) => {
+                  const effectiveTags = getEffectiveExerciseTags(ex, locale)
+                  const customTags = ex.tags ?? []
+                  const isAdding = addingTagForId === ex.id
+
+                  return (
+                    <div
+                      key={ex.id}
+                      className="rounded-xl bg-card border border-border p-3 space-y-2 hover:border-border/80 transition-colors"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-sm font-semibold text-foreground">
+                            {getExerciseDisplayName(ex, locale)}
+                          </span>
+                          <span className="text-[11px] px-2 py-0.5 rounded-md bg-muted text-muted-foreground font-normal">
+                            {calcTypeLabel[getExerciseCalculationType(ex)]}
+                          </span>
+                        </div>
+
+                        {/* Only show edit/delete for user's own exercises */}
+                        {ex.user_id && (
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={() => startEdit(ex)}
+                              className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground
+                                         hover:text-foreground transition-colors"
+                              aria-label={t('editExercise')}
+                            >
+                              <Pencil className="h-3.5 w-3.5" />
+                            </button>
+                            <button
+                              onClick={() => handleDelete(ex.id)}
+                              className="p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground
+                                         hover:text-destructive transition-colors"
+                              aria-label={t('deleteExercise')}
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
-                ))}
+
+                      {/* Tags row */}
+                      <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
+                        <TagIcon className="h-3 w-3 text-muted-foreground/70 mr-0.5" />
+                        {effectiveTags.length === 0 && !isAdding && (
+                          <span className="text-xs text-muted-foreground/60 italic">
+                            尚無標籤
+                          </span>
+                        )}
+
+                        {effectiveTags.map((tag) => {
+                          const isCustom = customTags.includes(tag)
+                          return (
+                            <span
+                              key={tag}
+                              className={`inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full border transition-colors ${
+                                isCustom
+                                  ? 'bg-primary/10 border-primary/20 text-primary font-medium'
+                                  : 'bg-muted/70 border-border text-muted-foreground'
+                              }`}
+                            >
+                              {tag}
+                              {isCustom && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveTag(ex.id, tag)}
+                                  disabled={tagActionPending}
+                                  className="hover:text-destructive transition-colors rounded p-0.5"
+                                  title="移除標籤"
+                                >
+                                  <X className="h-2.5 w-2.5" />
+                                </button>
+                              )}
+                            </span>
+                          )
+                        })}
+
+                        {/* Add tag button / input */}
+                        {isAdding ? (
+                          <div className="inline-flex items-center gap-1 bg-background border border-primary/50 rounded-full px-2 py-0.5">
+                            <input
+                              type="text"
+                              value={newTagInput}
+                              onChange={(e) => setNewTagInput(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault()
+                                  handleAddTag(ex.id)
+                                } else if (e.key === 'Escape') {
+                                  setAddingTagForId(null)
+                                  setNewTagInput('')
+                                }
+                              }}
+                              placeholder={t('enterTagPlaceholder')}
+                              className="text-xs bg-transparent border-none outline-none w-24 text-foreground placeholder:text-muted-foreground/60"
+                              autoFocus
+                            />
+                            <button
+                              type="button"
+                              onClick={() => handleAddTag(ex.id)}
+                              disabled={tagActionPending}
+                              className="text-primary hover:text-primary/80 transition-colors"
+                            >
+                              <Check className="h-3 w-3" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setAddingTagForId(null)
+                                setNewTagInput('')
+                              }}
+                              className="text-muted-foreground hover:text-foreground transition-colors"
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setAddingTagForId(ex.id)
+                              setNewTagInput('')
+                            }}
+                            className="inline-flex items-center gap-0.5 text-[11px] px-2 py-0.5 rounded-full border border-dashed border-border
+                                       text-muted-foreground hover:text-foreground hover:border-primary/40 transition-colors"
+                          >
+                            <Plus className="h-2.5 w-2.5" />
+                            {t('addTag')}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
               </div>
             </div>
           ))}

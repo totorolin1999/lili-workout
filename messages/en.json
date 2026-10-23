@@ -58,6 +58,10 @@
     "completed": "Done",
     "deleteSet": "Delete",
     "noExercises": "No exercises added yet.",
+    "formVariation": "Variation / Tag",
+    "selectTag": "Select variation",
+    "addCustomTag": "+ Custom variation",
+    "tagPlaceholder": "Detail (e.g. Bulgarian)",
     "calculationType": {
       "label": "Calculation Type",
       "weight_reps": "Weight & Reps",
@@ -89,6 +93,10 @@
     "categoryLabel": "Category",
     "selectCategory": "Select category...",
     "calculationTypeLabel": "Calculation Type",
+    "tagsLabel": "Tags / Variations",
+    "tagsPlaceholder": "Comma-separated tags (e.g. Bulgarian, Reverse)",
+    "addTag": "Add tag",
+    "enterTagPlaceholder": "Enter new tag...",
     "calculationTypes": {
       "weight_reps": "Weight & Reps",
       "reps": "Reps Only",

@@ -6,18 +6,20 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useTranslations, useLocale } from 'next-intl'
 import {
-  Plus, Trash2, ChevronDown, ChevronUp, Save, Dumbbell, Check
+  Plus, Trash2, ChevronDown, ChevronUp, Save, Dumbbell, Check, Tag as TagIcon, X
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import {
   getExerciseDisplayName,
   getExerciseCalculationType,
+  getEffectiveExerciseTags,
   CALCULATION_TYPES,
   type Exercise,
   type Locale,
   type CalculationType,
 } from '@/lib/exercises'
 import { saveWorkout, getLastSetForExercise } from '@/lib/actions/workout'
+import { addExerciseTag } from '@/lib/actions/exercise'
 import { formatSecondsToTime, parseTimeToSeconds, calculatePace } from '@/lib/cardio'
 import ExerciseSelectorModal from './ExerciseSelectorModal'
 
@@ -34,6 +36,7 @@ const SetSchema = z.object({
   distance_km: z.coerce.number().min(0).optional().nullable(),
   duration_seconds: z.coerce.number().int().min(0).optional().nullable(),
   duration_text: z.string().optional(),
+  tag: z.string().optional().nullable(),
   is_completed: z.boolean(),
 })
 
@@ -45,6 +48,7 @@ const WorkoutFormSchema = z.object({
     z.object({
       exercise_id: z.string().min(1, { message: 'exerciseRequired' }),
       calculation_type: z.enum(CALCULATION_TYPES as unknown as [CalculationType, ...CalculationType[]]).optional(),
+      tag: z.string().optional().nullable(),
       sets: z.array(SetSchema).min(1),
     }),
   ).min(1),
@@ -266,6 +270,7 @@ export default function WorkoutLogger({ exercises, initialDate }: WorkoutLoggerP
             reps,
             distance_km,
             duration_seconds,
+            tag: (group.tag || s.tag || '').trim() || null,
             is_completed: Boolean(s.is_completed),
           }
         })
@@ -466,11 +471,42 @@ function ExerciseGroupCard({
 
   const selectedExerciseId = form.watch(`exerciseGroups.${groupIdx}.exercise_id`)
   const currentCalcType = form.watch(`exerciseGroups.${groupIdx}.calculation_type`)
+  const selectedTag = form.watch(`exerciseGroups.${groupIdx}.tag`) || ''
   const registerExercise = form.register(`exerciseGroups.${groupIdx}.exercise_id`)
   const groupErrors = form.formState.errors.exerciseGroups?.[groupIdx]
 
+  const [isCustomTagInput, setIsCustomTagInput] = useState(false)
+  const [customTagValue, setCustomTagValue] = useState('')
+
   const selectedExercise = exercises.find((ex) => ex.id === selectedExerciseId)
   const calcType = currentCalcType ?? getExerciseCalculationType(selectedExercise)
+  const effectiveTags = selectedExercise ? getEffectiveExerciseTags(selectedExercise, locale) : []
+
+  function handleSelectTag(tag: string) {
+    if (selectedTag === tag) {
+      form.setValue(`exerciseGroups.${groupIdx}.tag`, '')
+    } else {
+      form.setValue(`exerciseGroups.${groupIdx}.tag`, tag)
+    }
+  }
+
+  async function handleApplyCustomTag() {
+    const clean = customTagValue.trim()
+    if (!clean) {
+      setIsCustomTagInput(false)
+      return
+    }
+    form.setValue(`exerciseGroups.${groupIdx}.tag`, clean)
+    if (selectedExercise) {
+      if (!selectedExercise.tags) selectedExercise.tags = []
+      if (!selectedExercise.tags.includes(clean)) {
+        selectedExercise.tags.push(clean)
+      }
+      addExerciseTag(selectedExercise.id, clean).catch(() => {})
+    }
+    setCustomTagValue('')
+    setIsCustomTagInput(false)
+  }
 
   const calcTypeLabel: Record<CalculationType, string> = {
     weight_reps: t('calculationType.weight_reps'),
@@ -586,6 +622,87 @@ function ExerciseGroupCard({
 
           {groupErrors?.exercise_id && (
             <p className="text-xs text-destructive mt-0.5">{t('errors.exerciseRequired')}</p>
+          )}
+
+          {/* Variations & Tags selection row */}
+          {selectedExercise && (
+            <div className="flex items-center gap-1.5 flex-wrap mt-2 pt-1.5 border-t border-border/40">
+              <span className="text-[11px] font-medium text-muted-foreground mr-0.5 flex items-center gap-1">
+                <TagIcon className="h-3 w-3 text-muted-foreground/70" />
+                {t('formVariation')}:
+              </span>
+
+              {/* Tag options */}
+              {effectiveTags.map((tag) => {
+                const isSelected = selectedTag === tag
+                return (
+                  <button
+                    key={tag}
+                    type="button"
+                    onClick={() => handleSelectTag(tag)}
+                    className={cn(
+                      'text-xs px-2 py-0.5 rounded-full border transition-all',
+                      isSelected
+                        ? 'bg-primary text-primary-foreground border-primary font-medium shadow-xs'
+                        : 'bg-background hover:bg-muted text-muted-foreground border-border',
+                    )}
+                  >
+                    {tag}
+                  </button>
+                )
+              })}
+
+              {/* Custom tag input / trigger */}
+              {isCustomTagInput ? (
+                <div className="inline-flex items-center gap-1 bg-background border border-primary/60 rounded-full px-2 py-0.5">
+                  <input
+                    type="text"
+                    value={customTagValue}
+                    onChange={(e) => setCustomTagValue(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault()
+                        handleApplyCustomTag()
+                      } else if (e.key === 'Escape') {
+                        setIsCustomTagInput(false)
+                        setCustomTagValue('')
+                      }
+                    }}
+                    placeholder={t('tagPlaceholder')}
+                    className="text-xs bg-transparent border-none outline-none w-24 text-foreground placeholder:text-muted-foreground/60"
+                    autoFocus
+                  />
+                  <button
+                    type="button"
+                    onClick={handleApplyCustomTag}
+                    className="text-primary hover:text-primary/80 transition-colors"
+                  >
+                    <Check className="h-3 w-3" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsCustomTagInput(false)
+                      setCustomTagValue('')
+                    }}
+                    className="text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsCustomTagInput(true)
+                    setCustomTagValue('')
+                  }}
+                  className="text-[11px] px-2 py-0.5 rounded-full border border-dashed border-border text-muted-foreground hover:text-foreground hover:border-primary/50 transition-colors"
+                >
+                  {t('addCustomTag')}
+                </button>
+              )}
+            </div>
           )}
         </div>
 

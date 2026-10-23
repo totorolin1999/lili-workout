@@ -58,6 +58,10 @@
     "completed": "Kész",
     "deleteSet": "Törlés",
     "noExercises": "Még nincsenek gyakorlatok hozzáadva.",
+    "formVariation": "Változat / Címke",
+    "selectTag": "Válassz változatot",
+    "addCustomTag": "+ Egyéni változat",
+    "tagPlaceholder": "Részlet (pl. Bolgár)",
     "calculationType": {
       "label": "Számítási mód",
       "weight_reps": "Súly és Ismétlés",
@@ -89,6 +93,10 @@
     "categoryLabel": "Kategória",
     "selectCategory": "Válassz kategóriát...",
     "calculationTypeLabel": "Számítási mód",
+    "tagsLabel": "Címkék / Változatok",
+    "tagsPlaceholder": "Vesszővel elválasztva (pl. Bolgár, Előre lépő)",
+    "addTag": "Címke hozzáadása",
+    "enterTagPlaceholder": "Új címke...",
     "calculationTypes": {
       "weight_reps": "Súly és Ismétlés",
       "reps": "Csak Ismétlés",

@@ -104,6 +104,7 @@ CREATE TABLE IF NOT EXISTS workout_sets (
   reps              INTEGER CHECK (reps IS NULL OR reps > 0),
   distance_km       NUMERIC(6,2) CHECK (distance_km IS NULL OR distance_km >= 0),
   duration_seconds  INTEGER CHECK (duration_seconds IS NULL OR duration_seconds >= 0),
+  tag               TEXT,
   is_completed      BOOLEAN NOT NULL DEFAULT true,
   created_at        TIMESTAMPTZ NOT NULL DEFAULT now()
 );
@@ -202,6 +203,39 @@ ON CONFLICT DO NOTHING;
 
 
 -- ─────────────────────────────────────────────────────────────
+-- EXERCISE_TAGS
+-- Tag variations/details for exercises (e.g. Bulgarian, Reverse for Lunges).
+-- Global default tags have user_id = NULL.
+-- User custom tags have user_id = auth.uid().
+-- ─────────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS exercise_tags (
+  id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  exercise_id UUID NOT NULL REFERENCES exercises(id) ON DELETE CASCADE,
+  user_id     UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  tag         TEXT NOT NULL,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  CONSTRAINT unique_exercise_user_tag UNIQUE(exercise_id, user_id, tag)
+);
+
+CREATE INDEX IF NOT EXISTS idx_exercise_tags_exercise ON exercise_tags (exercise_id);
+CREATE INDEX IF NOT EXISTS idx_exercise_tags_user ON exercise_tags (user_id);
+
+ALTER TABLE exercise_tags ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Anyone can view global and own exercise tags"
+  ON exercise_tags FOR SELECT
+  USING (user_id IS NULL OR user_id = auth.uid());
+
+CREATE POLICY "Users can insert own exercise tags"
+  ON exercise_tags FOR INSERT
+  WITH CHECK (user_id = auth.uid());
+
+CREATE POLICY "Users can delete own exercise tags"
+  ON exercise_tags FOR DELETE
+  USING (user_id = auth.uid());
+
+
+-- ─────────────────────────────────────────────────────────────
 -- PERMISSIONS & GRANTS
 -- Explicit table grants for Data API (PostgREST, supabase-js).
 -- Required for tables created from October 30, 2026 onwards.
@@ -219,4 +253,9 @@ GRANT ALL ON TABLE workouts TO service_role;
 -- Workout Sets
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE workout_sets TO authenticated;
 GRANT ALL ON TABLE workout_sets TO service_role;
+
+-- Exercise Tags
+GRANT SELECT ON TABLE exercise_tags TO anon;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE exercise_tags TO authenticated;
+GRANT ALL ON TABLE exercise_tags TO service_role;
 

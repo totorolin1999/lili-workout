@@ -15,6 +15,7 @@ export interface WorkoutSet {
   reps?: number | null
   distance_km?: number | null
   duration_seconds?: number | null
+  tag?: string | null
   is_completed?: boolean
 }
 
@@ -53,6 +54,7 @@ const WorkoutSetSchema = z.object({
   reps: z.number().int().positive().optional().nullable(),
   distance_km: z.number().nonnegative().optional().nullable(),
   duration_seconds: z.number().int().nonnegative().optional().nullable(),
+  tag: z.string().optional().nullable(),
   is_completed: z.boolean().optional().default(false),
 })
 
@@ -104,14 +106,21 @@ export async function saveWorkout(input: SaveWorkoutInput): Promise<{ id: string
     reps: s.reps ?? null,
     distance_km: s.distance_km ?? null,
     duration_seconds: s.duration_seconds ?? null,
+    tag: s.tag?.trim() || null,
     is_completed: s.is_completed ?? false,
   }))
 
   let setsError = (await supabase.from('workout_sets').insert(setsToInsert)).error
 
+  if (setsError && (setsError.message.includes('tag') || setsError.code === '42703')) {
+    // Retry without tag if migration hasn't been executed
+    const fallbackSets = setsToInsert.map(({ tag: _, ...rest }) => rest)
+    setsError = (await supabase.from('workout_sets').insert(fallbackSets)).error
+  }
+
   if (setsError && setsError.message.includes('is_completed')) {
     // Retry without is_completed if migration hasn't been executed
-    const fallbackSets = setsToInsert.map(({ is_completed: _, ...rest }) => rest)
+    const fallbackSets = setsToInsert.map(({ is_completed: _, tag: __, ...rest }) => rest)
     setsError = (await supabase.from('workout_sets').insert(fallbackSets)).error
   }
 
@@ -221,6 +230,7 @@ export async function getWorkoutHistory(): Promise<WorkoutHistoryEntry[]> {
         reps,
         distance_km,
         duration_seconds,
+        tag,
         is_completed,
         exercises(id, name_hu, name_en, name_zh, category)
       )
@@ -372,13 +382,19 @@ export async function updateWorkout(
     reps: s.reps ?? null,
     distance_km: s.distance_km ?? null,
     duration_seconds: s.duration_seconds ?? null,
+    tag: s.tag?.trim() || null,
     is_completed: s.is_completed ?? true,
   }))
 
   let setsError = (await supabase.from('workout_sets').insert(setsToInsert)).error
 
+  if (setsError && (setsError.message.includes('tag') || setsError.code === '42703')) {
+    const fallbackSets = setsToInsert.map(({ tag: _, ...rest }) => rest)
+    setsError = (await supabase.from('workout_sets').insert(fallbackSets)).error
+  }
+
   if (setsError && setsError.message.includes('is_completed')) {
-    const fallbackSets = setsToInsert.map(({ is_completed: _, ...rest }) => rest)
+    const fallbackSets = setsToInsert.map(({ is_completed: _, tag: __, ...rest }) => rest)
     setsError = (await supabase.from('workout_sets').insert(fallbackSets)).error
   }
 
@@ -417,6 +433,7 @@ export async function updateWorkout(
         reps,
         distance_km,
         duration_seconds,
+        tag,
         is_completed,
         exercises(id, name_hu, name_en, name_zh, category)
       )

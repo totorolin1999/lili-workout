@@ -35,6 +35,7 @@ export interface ExerciseGroup {
   exerciseName: string
   category: string
   calcType: CalculationType
+  tag?: string | null
   sets: WorkoutHistorySet[]
 }
 
@@ -46,7 +47,8 @@ export function groupSetsByExercise(
   const map = new Map<string, ExerciseGroup>()
 
   for (const set of sets) {
-    let group = map.get(set.exercise_id)
+    const groupKey = `${set.exercise_id}__${set.tag || ''}`
+    let group = map.get(groupKey)
     if (!group) {
       const related = set.exercises
       const ex = Array.isArray(related) ? related[0] : related
@@ -96,9 +98,10 @@ export function groupSetsByExercise(
         exerciseName,
         category,
         calcType,
+        tag: set.tag || null,
         sets: [],
       }
-      map.set(set.exercise_id, group)
+      map.set(groupKey, group)
       groups.push(group)
     }
     group.sets.push(set)
@@ -153,7 +156,7 @@ export default function WorkoutCard({
 
   const setCount = workout.workout_sets?.length ?? 0
   const exerciseGroups = groupSetsByExercise(workout.workout_sets ?? [], locale)
-  const exerciseNames = exerciseGroups.slice(0, 3).map((g) => g.exerciseName)
+  const exerciseNames = exerciseGroups.slice(0, 3).map((g) => g.tag ? `${g.exerciseName} (${g.tag})` : g.exerciseName)
 
   return (
     <div
@@ -289,13 +292,18 @@ export default function WorkoutCard({
               <div className="space-y-3">
                 {exerciseGroups.map((group) => (
                   <div
-                    key={group.exerciseId}
+                    key={`${group.exerciseId}__${group.tag || ''}`}
                     className="rounded-xl border border-border/80 bg-card overflow-hidden"
                   >
                     {/* Exercise Name Header */}
                     <div className="flex items-center justify-between px-3.5 py-2 bg-muted/30 border-b border-border/60">
                       <h3 className="text-sm font-semibold text-foreground">
                         {group.exerciseName}
+                        {group.tag && (
+                          <span className="ml-2 inline-block text-[11px] px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium border border-primary/20">
+                            {group.tag}
+                          </span>
+                        )}
                       </h3>
                       {onViewTrend && (
                         <button
