@@ -639,17 +639,6 @@ function ExerciseGroupCard({
   return (
     <div
       data-group-card-idx={groupIdx}
-      draggable
-      onDragStart={(e) => {
-        const target = e.target as HTMLElement
-        if (!target.closest('[data-drag-handle="true"]')) {
-          e.preventDefault()
-          return
-        }
-        e.dataTransfer.effectAllowed = 'move'
-        e.dataTransfer.setData('text/plain', String(groupIdx))
-        onDragStart?.(groupIdx)
-      }}
       onDragOver={(e) => {
         e.preventDefault()
         e.dataTransfer.dropEffect = 'move'
@@ -658,9 +647,6 @@ function ExerciseGroupCard({
       onDrop={(e) => {
         e.preventDefault()
         onDrop?.(groupIdx)
-      }}
-      onDragEnd={() => {
-        onDragEnd?.()
       }}
       className={cn(
         'rounded-2xl border bg-card overflow-hidden shadow-sm transition-all duration-150',
@@ -676,14 +662,30 @@ function ExerciseGroupCard({
           {/* Drag handle */}
           <div
             data-drag-handle="true"
-            className="p-1 rounded cursor-grab active:cursor-grabbing hover:bg-muted text-muted-foreground/50 hover:text-foreground touch-none select-none transition-colors"
+            draggable={true}
+            onDragStart={(e) => {
+              e.dataTransfer.effectAllowed = 'move'
+              e.dataTransfer.setData('text/plain', String(groupIdx))
+              const card = (e.currentTarget as HTMLElement).closest('[data-group-card-idx]') as HTMLElement
+              if (card && e.dataTransfer.setDragImage) {
+                const rect = card.getBoundingClientRect()
+                const offsetX = Math.max(10, Math.min(e.clientX - rect.left, rect.width - 10))
+                const offsetY = Math.max(10, Math.min(e.clientY - rect.top, 40))
+                e.dataTransfer.setDragImage(card, offsetX, offsetY)
+              }
+              onDragStart?.(groupIdx)
+            }}
+            onDragEnd={() => {
+              onDragEnd?.()
+            }}
+            className="p-1 rounded cursor-grab active:cursor-grabbing hover:bg-muted text-muted-foreground/60 hover:text-foreground touch-none select-none transition-colors"
             title={t('dragToReorder')}
             aria-label={t('dragToReorder')}
             onTouchStart={() => onTouchStart?.(groupIdx)}
             onTouchMove={(e) => onTouchMove?.(e)}
             onTouchEnd={() => onTouchEnd?.()}
           >
-            <GripVertical className="h-4 w-4" />
+            <GripVertical className="h-4 w-4 pointer-events-none" />
           </div>
 
           {/* Up / Down arrows (vertical compact stepper) */}

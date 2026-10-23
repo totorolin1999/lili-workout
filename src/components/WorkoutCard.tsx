@@ -191,17 +191,6 @@ export default function WorkoutCard({
   return (
     <div
       data-workout-card-idx={indexInDay}
-      draggable={canReorder}
-      onDragStart={(e) => {
-        const target = e.target as HTMLElement
-        if (!target.closest('[data-drag-handle="true"]')) {
-          e.preventDefault()
-          return
-        }
-        e.dataTransfer.effectAllowed = 'move'
-        e.dataTransfer.setData('text/plain', String(indexInDay))
-        onDragStart?.(indexInDay!)
-      }}
       onDragOver={(e) => {
         e.preventDefault()
         e.dataTransfer.dropEffect = 'move'
@@ -210,9 +199,6 @@ export default function WorkoutCard({
       onDrop={(e) => {
         e.preventDefault()
         onDrop?.(indexInDay!)
-      }}
-      onDragEnd={() => {
-        onDragEnd?.()
       }}
       className={cn(
         'rounded-2xl border bg-card transition-all duration-200 overflow-hidden',
@@ -268,14 +254,30 @@ export default function WorkoutCard({
                 {/* Drag handle */}
                 <div
                   data-drag-handle="true"
-                  className="p-1 rounded cursor-grab active:cursor-grabbing hover:bg-muted text-muted-foreground/50 hover:text-foreground touch-none select-none transition-colors"
+                  draggable={true}
+                  onDragStart={(e) => {
+                    e.dataTransfer.effectAllowed = 'move'
+                    e.dataTransfer.setData('text/plain', String(indexInDay))
+                    const card = (e.currentTarget as HTMLElement).closest('[data-workout-card-idx]') as HTMLElement
+                    if (card && e.dataTransfer.setDragImage) {
+                      const rect = card.getBoundingClientRect()
+                      const offsetX = Math.max(10, Math.min(e.clientX - rect.left, rect.width - 10))
+                      const offsetY = Math.max(10, Math.min(e.clientY - rect.top, 40))
+                      e.dataTransfer.setDragImage(card, offsetX, offsetY)
+                    }
+                    onDragStart?.(indexInDay!)
+                  }}
+                  onDragEnd={() => {
+                    onDragEnd?.()
+                  }}
+                  className="p-1 rounded cursor-grab active:cursor-grabbing hover:bg-muted text-muted-foreground/60 hover:text-foreground touch-none select-none transition-colors"
                   title={tWorkout('dragToReorder')}
                   aria-label={tWorkout('dragToReorder')}
                   onTouchStart={() => onTouchStart?.(indexInDay!)}
                   onTouchMove={(e) => onTouchMove?.(e)}
                   onTouchEnd={() => onTouchEnd?.()}
                 >
-                  <GripVertical className="h-4 w-4" />
+                  <GripVertical className="h-4 w-4 pointer-events-none" />
                 </div>
 
                 {/* Up / Down arrows */}
