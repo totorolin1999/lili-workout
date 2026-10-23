@@ -473,3 +473,59 @@ export async function updateWorkout(
   return { workout: updatedWorkout as unknown as WorkoutHistoryEntry }
 }
 
+/**
+ * Reorders a list of workouts by updating their created_at timestamps.
+ * orderedIds: workout IDs in the desired order (top to bottom).
+ */
+export async function reorderWorkouts(
+  orderedIds: string[],
+): Promise<{ success: boolean; error?: string }> {
+  if (!orderedIds || orderedIds.length <= 1) return { success: true }
+
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { success: false, error: 'Unauthorized' }
+
+  const { data: workouts, error } = await supabase
+    .from('workouts')
+    .select('id, created_at')
+    .in('id', orderedIds)
+    .eq('user_id', user.id)
+
+  if (error || !workouts || workouts.length === 0) {
+    return { success: false, error: error?.message || 'Workouts not found' }
+  }
+
+  // Sort timestamps descending (first in list gets highest timestamp)
+  const timestamps = workouts
+    .map((w) => new Date(w.created_at).getTime())
+    .sort((a, b) => b - a)
+
+  // Ensure timestamps are strictly decreasing by at least 1 second
+  for (let i = 1; i < timestamps.length; i++) {
+    if (timestamps[i] >= timestamps[i - 1]) {
+      timestamps[i] = timestamps[i - 1] - 1000
+    }
+  }
+
+  const updates = orderedIds.map((id, index) => {
+    const newCreatedAt = new Date(timestamps[index]).toISOString()
+    return supabase
+      .from('workouts')
+      .update({ created_at: newCreatedAt })
+      .eq('id', id)
+      .eq('user_id', user.id)
+  })
+
+  const results = await Promise.all(updates)
+  const failed = results.find((r) => r.error)
+  if (failed?.error) {
+    return { success: false, error: failed.error.message }
+  }
+
+  revalidatePath('/[locale]/history', 'page')
+  revalidatePath('/[locale]', 'page')
+  return { success: true }
+}
+
+

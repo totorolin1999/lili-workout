@@ -5,6 +5,8 @@ import { useTranslations } from 'next-intl'
 import {
   Calendar,
   ChevronDown,
+  ChevronUp,
+  GripVertical,
   Trash2,
   FileText,
   Loader2,
@@ -134,6 +136,20 @@ interface WorkoutCardProps {
   isDeleting: boolean
   hideDateHeader?: boolean
   indexInDay?: number
+  canReorder?: boolean
+  isFirstInDay?: boolean
+  isLastInDay?: boolean
+  isBeingDragged?: boolean
+  isDropTarget?: boolean
+  onMoveUp?: () => void
+  onMoveDown?: () => void
+  onDragStart?: (index: number) => void
+  onDragOver?: (index: number) => void
+  onDrop?: (index: number) => void
+  onDragEnd?: () => void
+  onTouchStart?: (index: number) => void
+  onTouchMove?: (e: React.TouchEvent) => void
+  onTouchEnd?: () => void
   onViewTrend?: (exerciseId: string) => void
 }
 
@@ -148,6 +164,20 @@ export default function WorkoutCard({
   isDeleting,
   hideDateHeader = false,
   indexInDay,
+  canReorder = false,
+  isFirstInDay = false,
+  isLastInDay = false,
+  isBeingDragged = false,
+  isDropTarget = false,
+  onMoveUp,
+  onMoveDown,
+  onDragStart,
+  onDragOver,
+  onDrop,
+  onDragEnd,
+  onTouchStart,
+  onTouchMove,
+  onTouchEnd,
   onViewTrend,
 }: WorkoutCardProps) {
   const tHistory = useTranslations('history')
@@ -160,11 +190,37 @@ export default function WorkoutCard({
 
   return (
     <div
+      data-workout-card-idx={indexInDay}
+      draggable={canReorder}
+      onDragStart={(e) => {
+        const target = e.target as HTMLElement
+        if (!target.closest('[data-drag-handle="true"]')) {
+          e.preventDefault()
+          return
+        }
+        e.dataTransfer.effectAllowed = 'move'
+        e.dataTransfer.setData('text/plain', String(indexInDay))
+        onDragStart?.(indexInDay!)
+      }}
+      onDragOver={(e) => {
+        e.preventDefault()
+        e.dataTransfer.dropEffect = 'move'
+        onDragOver?.(indexInDay!)
+      }}
+      onDrop={(e) => {
+        e.preventDefault()
+        onDrop?.(indexInDay!)
+      }}
+      onDragEnd={() => {
+        onDragEnd?.()
+      }}
       className={cn(
-        'rounded-2xl border border-border bg-card transition-all duration-200 overflow-hidden',
+        'rounded-2xl border bg-card transition-all duration-200 overflow-hidden',
+        isBeingDragged && 'opacity-40 border-dashed border-primary scale-[0.99]',
+        isDropTarget && 'ring-2 ring-primary ring-offset-2 ring-offset-background border-primary',
         isEditing
           ? 'ring-2 ring-primary/40 border-primary/50'
-          : 'hover:border-primary/50 shadow-sm',
+          : !isBeingDragged && !isDropTarget && 'hover:border-primary/50 shadow-sm border-border',
       )}
     >
       {isEditing ? (
@@ -201,76 +257,130 @@ export default function WorkoutCard({
       ) : (
         /* Normal Display Mode */
         <>
-          {/* Clickable Header */}
-          <button
-            type="button"
-            onClick={onToggleExpand}
-            aria-expanded={isExpanded}
-            className="w-full text-left p-4 space-y-2.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 transition-colors"
-          >
-            <div className="flex items-start justify-between gap-2">
-              <div className="space-y-1 min-w-0 flex-1">
-                {hideDateHeader ? (
-                  <div className="flex items-center gap-2">
-                    <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-2 py-0.5 rounded-md bg-primary/10 text-primary">
-                      <Dumbbell className="h-3 w-3" />
-                      {tHistory('workoutNumber', {
-                        number: indexInDay != null ? indexInDay + 1 : 1,
-                      })}
-                    </span>
-                    {workout.title && (
-                      <span className="text-sm text-foreground font-medium truncate">
-                        {workout.title}
-                      </span>
-                    )}
-                  </div>
-                ) : (
-                  <>
-                    <div className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
-                      <Calendar className="h-4 w-4 text-primary flex-shrink-0" />
-                      <span>{formatDate(workout.date, locale)}</span>
-                    </div>
-                    {workout.title && (
-                      <p className="text-sm text-foreground/90 font-medium truncate">
-                        {workout.title}
-                      </p>
-                    )}
-                  </>
-                )}
-              </div>
+          {/* Header Row */}
+          <div className="flex items-start p-4 gap-2">
+            {/* Reorder controls (when multiple workouts in day) */}
+            {canReorder && (
+              <div
+                className="flex items-center gap-0.5 shrink-0 -ml-1 mt-0.5"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* Drag handle */}
+                <div
+                  data-drag-handle="true"
+                  className="p-1 rounded cursor-grab active:cursor-grabbing hover:bg-muted text-muted-foreground/50 hover:text-foreground touch-none select-none transition-colors"
+                  title={tWorkout('dragToReorder')}
+                  aria-label={tWorkout('dragToReorder')}
+                  onTouchStart={() => onTouchStart?.(indexInDay!)}
+                  onTouchMove={(e) => onTouchMove?.(e)}
+                  onTouchEnd={() => onTouchEnd?.()}
+                >
+                  <GripVertical className="h-4 w-4" />
+                </div>
 
-              <div className="flex items-center gap-2 flex-shrink-0">
-                <span className="text-xs text-muted-foreground bg-muted px-2.5 py-0.5 rounded-full font-medium">
-                  {setCount} {tHistory('sets')}
-                </span>
-                <ChevronDown
-                  className={cn(
-                    'h-4 w-4 text-muted-foreground transition-transform duration-200',
-                    isExpanded && 'rotate-180 text-primary',
-                  )}
-                />
-              </div>
-            </div>
-
-            {/* Exercise preview pills */}
-            {exerciseNames.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 pt-0.5">
-                {exerciseNames.map((name, i) => (
-                  <span
-                    key={i}
-                    className="text-xs bg-primary/10 text-primary px-2.5 py-0.5 rounded-full font-medium"
+                {/* Up / Down arrows */}
+                <div className="flex flex-col -space-y-0.5">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onMoveUp?.()
+                    }}
+                    disabled={isFirstInDay}
+                    className="p-0.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground disabled:opacity-20 disabled:hover:bg-transparent disabled:cursor-not-allowed transition-colors"
+                    aria-label={tWorkout('moveUp')}
+                    title={tWorkout('moveUp')}
                   >
-                    {name}
-                  </span>
-                ))}
-                {exerciseGroups.length > 3 && (
-                  <span className="text-xs text-muted-foreground px-2 py-0.5">
-                    +{exerciseGroups.length - 3}
-                  </span>
-                )}
+                    <ChevronUp className="h-3 w-3" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onMoveDown?.()
+                    }}
+                    disabled={isLastInDay}
+                    className="p-0.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground disabled:opacity-20 disabled:hover:bg-transparent disabled:cursor-not-allowed transition-colors"
+                    aria-label={tWorkout('moveDown')}
+                    title={tWorkout('moveDown')}
+                  >
+                    <ChevronDown className="h-3 w-3" />
+                  </button>
+                </div>
               </div>
             )}
-          </button>
+
+            {/* Clickable Header */}
+            <button
+              type="button"
+              onClick={onToggleExpand}
+              aria-expanded={isExpanded}
+              className="flex-1 min-w-0 text-left space-y-2.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 transition-colors"
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div className="space-y-1 min-w-0 flex-1">
+                  {hideDateHeader ? (
+                    <div className="flex items-center gap-2">
+                      <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-2 py-0.5 rounded-md bg-primary/10 text-primary">
+                        <Dumbbell className="h-3 w-3" />
+                        {tHistory('workoutNumber', {
+                          number: indexInDay != null ? indexInDay + 1 : 1,
+                        })}
+                      </span>
+                      {workout.title && (
+                        <span className="text-sm text-foreground font-medium truncate">
+                          {workout.title}
+                        </span>
+                      )}
+                    </div>
+                  ) : (
+                    <>
+                      <div className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
+                        <Calendar className="h-4 w-4 text-primary flex-shrink-0" />
+                        <span>{formatDate(workout.date, locale)}</span>
+                      </div>
+                      {workout.title && (
+                        <p className="text-sm text-foreground/90 font-medium truncate">
+                          {workout.title}
+                        </p>
+                      )}
+                    </>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <span className="text-xs text-muted-foreground bg-muted px-2.5 py-0.5 rounded-full font-medium">
+                    {setCount} {tHistory('sets')}
+                  </span>
+                  <ChevronDown
+                    className={cn(
+                      'h-4 w-4 text-muted-foreground transition-transform duration-200',
+                      isExpanded && 'rotate-180 text-primary',
+                    )}
+                  />
+                </div>
+              </div>
+
+              {/* Exercise preview pills */}
+              {exerciseNames.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 pt-0.5">
+                  {exerciseNames.map((name, i) => (
+                    <span
+                      key={i}
+                      className="text-xs bg-primary/10 text-primary px-2.5 py-0.5 rounded-full font-medium"
+                    >
+                      {name}
+                    </span>
+                  ))}
+                  {exerciseGroups.length > 3 && (
+                    <span className="text-xs text-muted-foreground px-2 py-0.5">
+                      +{exerciseGroups.length - 3}
+                    </span>
+                  )}
+                </div>
+              )}
+            </button>
+          </div>
 
           {/* Expanded Details */}
           {isExpanded && (

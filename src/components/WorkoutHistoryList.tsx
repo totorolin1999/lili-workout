@@ -15,6 +15,7 @@ import { cn } from '@/lib/utils'
 import type { Exercise, Locale } from '@/lib/exercises'
 import {
   deleteWorkout,
+  reorderWorkouts,
   type WorkoutHistoryEntry,
 } from '@/lib/actions/workout'
 import WorkoutCalendar from './WorkoutCalendar'
@@ -54,6 +55,8 @@ export default function WorkoutHistoryList({
 
   const [expandedIds, setExpandedIds] = useState<Record<string, boolean>>({})
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [draggingWorkoutIndex, setDraggingWorkoutIndex] = useState<number | null>(null)
+  const [dragOverWorkoutIndex, setDragOverWorkoutIndex] = useState<number | null>(null)
   const [, startTransition] = useTransition()
 
   const combinedExercises = useMemo(() => {
@@ -100,6 +103,115 @@ export default function WorkoutHistoryList({
     setWorkouts((prev) =>
       prev.map((w) => (w.id === updated.id ? updated : w)),
     )
+  }
+
+  function handleMoveWorkoutInDay(direction: 'up' | 'down', indexInDay: number) {
+    const targetIndex = direction === 'up' ? indexInDay - 1 : indexInDay + 1
+    if (targetIndex < 0 || targetIndex >= selectedDateWorkouts.length) return
+
+    const newDayWorkouts = [...selectedDateWorkouts]
+    const [moved] = newDayWorkouts.splice(indexInDay, 1)
+    newDayWorkouts.splice(targetIndex, 0, moved)
+
+    const newDayIds = new Set(newDayWorkouts.map((w) => w.id))
+    let p = 0
+    const nextWorkouts = workouts.map((w) => {
+      if (newDayIds.has(w.id)) {
+        return newDayWorkouts[p++]
+      }
+      return w
+    })
+
+    setWorkouts(nextWorkouts)
+
+    startTransition(async () => {
+      const res = await reorderWorkouts(newDayWorkouts.map((w) => w.id))
+      if (res.error) {
+        alert(res.error)
+      }
+    })
+  }
+
+  function handleDragStartWorkout(indexInDay: number) {
+    setDraggingWorkoutIndex(indexInDay)
+  }
+
+  function handleDragOverWorkout(indexInDay: number) {
+    if (dragOverWorkoutIndex !== indexInDay) {
+      setDragOverWorkoutIndex(indexInDay)
+    }
+  }
+
+  function handleDropWorkout(targetIndexInDay: number) {
+    if (
+      draggingWorkoutIndex === null ||
+      draggingWorkoutIndex === targetIndexInDay ||
+      targetIndexInDay < 0 ||
+      targetIndexInDay >= selectedDateWorkouts.length
+    ) {
+      setDraggingWorkoutIndex(null)
+      setDragOverWorkoutIndex(null)
+      return
+    }
+
+    const newDayWorkouts = [...selectedDateWorkouts]
+    const [moved] = newDayWorkouts.splice(draggingWorkoutIndex, 1)
+    newDayWorkouts.splice(targetIndexInDay, 0, moved)
+
+    const newDayIds = new Set(newDayWorkouts.map((w) => w.id))
+    let p = 0
+    const nextWorkouts = workouts.map((w) => {
+      if (newDayIds.has(w.id)) {
+        return newDayWorkouts[p++]
+      }
+      return w
+    })
+
+    setWorkouts(nextWorkouts)
+    setDraggingWorkoutIndex(null)
+    setDragOverWorkoutIndex(null)
+
+    startTransition(async () => {
+      const res = await reorderWorkouts(newDayWorkouts.map((w) => w.id))
+      if (res.error) {
+        alert(res.error)
+      }
+    })
+  }
+
+  function handleDragEndWorkout() {
+    setDraggingWorkoutIndex(null)
+    setDragOverWorkoutIndex(null)
+  }
+
+  function handleTouchStartWorkout(indexInDay: number) {
+    setDraggingWorkoutIndex(indexInDay)
+  }
+
+  function handleTouchMoveWorkout(e: React.TouchEvent) {
+    const touch = e.touches[0]
+    if (!touch) return
+    const el = document.elementFromPoint(touch.clientX, touch.clientY)
+    const card = el?.closest('[data-workout-card-idx]')
+    if (card) {
+      const idx = Number(card.getAttribute('data-workout-card-idx'))
+      if (!isNaN(idx) && idx !== dragOverWorkoutIndex) {
+        setDragOverWorkoutIndex(idx)
+      }
+    }
+  }
+
+  function handleTouchEndWorkout() {
+    if (
+      draggingWorkoutIndex !== null &&
+      dragOverWorkoutIndex !== null &&
+      draggingWorkoutIndex !== dragOverWorkoutIndex
+    ) {
+      handleDropWorkout(dragOverWorkoutIndex)
+    } else {
+      setDraggingWorkoutIndex(null)
+      setDragOverWorkoutIndex(null)
+    }
   }
 
   // Workouts on currently selected date in calendar view
@@ -218,6 +330,20 @@ export default function WorkoutHistoryList({
                     isDeleting={deletingId === workout.id}
                     hideDateHeader={true}
                     indexInDay={index}
+                    canReorder={selectedDateWorkouts.length > 1}
+                    isFirstInDay={index === 0}
+                    isLastInDay={index === selectedDateWorkouts.length - 1}
+                    isBeingDragged={draggingWorkoutIndex === index}
+                    isDropTarget={dragOverWorkoutIndex === index && draggingWorkoutIndex !== index}
+                    onMoveUp={() => handleMoveWorkoutInDay('up', index)}
+                    onMoveDown={() => handleMoveWorkoutInDay('down', index)}
+                    onDragStart={handleDragStartWorkout}
+                    onDragOver={handleDragOverWorkout}
+                    onDrop={handleDropWorkout}
+                    onDragEnd={handleDragEndWorkout}
+                    onTouchStart={handleTouchStartWorkout}
+                    onTouchMove={handleTouchMoveWorkout}
+                    onTouchEnd={handleTouchEndWorkout}
                   />
                 ))}
               </div>
