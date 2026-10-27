@@ -11,7 +11,7 @@ const ExerciseSchema = z.object({
   name_hu: z.string().max(200).nullable().optional(),
   name_en: z.string().max(200).nullable().optional(),
   name_zh: z.string().max(200).nullable().optional(),
-  category: z.enum(['legs', 'chest', 'back', 'shoulders', 'arms', 'core', 'cardio', 'other']),
+  category: z.enum(['legs', 'glutes', 'chest', 'back', 'shoulders', 'arms', 'core', 'cardio', 'other']),
   calculation_type: z.enum(CALCULATION_TYPES as unknown as [CalculationType, ...CalculationType[]]).optional().nullable(),
   tags: z.array(z.string()).optional(),
 }).refine(

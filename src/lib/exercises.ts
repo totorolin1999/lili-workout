@@ -13,6 +13,20 @@ export const CALCULATION_TYPES: readonly CalculationType[] = [
   'reps_duration',
 ] as const
 
+export const CATEGORIES = [
+  'legs',
+  'glutes',
+  'chest',
+  'back',
+  'shoulders',
+  'arms',
+  'core',
+  'cardio',
+  'other',
+] as const
+
+export type Category = (typeof CATEGORIES)[number]
+
 /**
  * Represents an exercise row from the `exercises` table.
  * All name fields are nullable — at least one must be non-null (enforced by DB CHECK).
@@ -93,6 +107,17 @@ export function getExerciseCalculationType(
     return 'duration'
   }
 
+  // Glutes isolation movements (home-friendly bodyweight/band exercises): reps default
+  if (
+    nameZh.includes('後踢') || nameEn.includes('donkey kick') || nameHu.includes('szamárrúgás') ||
+    nameZh.includes('蚌式') || nameEn.includes('clamshell') || nameHu.includes('kagyló') ||
+    nameZh.includes('消防栓') || nameEn.includes('fire hydrant') || nameHu.includes('tűzcsap') ||
+    nameZh.includes('蛙式') || nameEn.includes('frog pump') || nameHu.includes('békapumpa') ||
+    nameZh.includes('側臥抬腿') || nameEn.includes('side-lying leg raise') || nameHu.includes('oldalsó lábemelés')
+  ) {
+    return 'reps'
+  }
+
   // Cardio default (running, cycling, etc.): distance + duration
   if (exercise?.category === 'cardio') {
     return 'distance_duration'
@@ -117,6 +142,15 @@ const DEFAULT_TAGS_MAP: Record<Locale, Array<{ keywords: string[]; tags: string[
   'zh-TW': [
     { keywords: ['弓步', 'lunge', 'kitörés'], tags: ['前跨', '後跨', '保加利亞', '行走', '側步'] },
     { keywords: ['深蹲', 'squat', 'guggolás'], tags: ['背槓', '前槓', '高腳杯', '箱上', '窄距'] },
+    { keywords: ['臀橋', 'glute bridge', 'farhíd'], tags: ['自重', '彈力帶', '單腿', '啞鈴', '墊高'] },
+    { keywords: ['臀推', 'hip thrust', 'csípőtolás'], tags: ['沙發/椅子', '彈力帶', '啞鈴', '單腿', '槓鈴'] },
+    { keywords: ['保加利亞', 'bulgarian', 'bolgár'], tags: ['沙發/椅子', '自重', '啞鈴', '臀部主導'] },
+    { keywords: ['跪姿後踢', '後踢', 'donkey kick', 'szamárrúgás'], tags: ['自重', '彈力帶', '負重啞鈴', '直腿'] },
+    { keywords: ['蚌式', 'clamshell', 'kagyló'], tags: ['自重', '彈力帶', '抬腿蚌式'] },
+    { keywords: ['消防栓', 'fire hydrant', 'kutyapisilés', 'tűzcsap'], tags: ['自重', '彈力帶', '負重'] },
+    { keywords: ['蛙式推臀', 'frog pump', 'békapumpa'], tags: ['自重', '啞鈴', '彈力帶'] },
+    { keywords: ['側臥抬腿', 'side-lying leg raise', 'oldalsó lábemelés'], tags: ['自重', '彈力帶', '腳踝負重'] },
+    { keywords: ['臀部', 'glute', 'glutes', 'farizom'], tags: ['居家自重', '彈力帶', '啞鈴', '沙發/椅子', '單腿'] },
     { keywords: ['臥推', 'bench press', 'mellnyomás'], tags: ['槓鈴', '啞鈴', '上斜', '下斜', '窄握'] },
     { keywords: ['伏地挺身', 'push-up', 'fekvőtámasz'], tags: ['標準', '跪姿', '鑽石', '窄距', '增高'] },
     { keywords: ['引體向上', 'pull-up', 'húzódzkodás'], tags: ['正手', '反手', '對握', '彈力帶輔助'] },
@@ -138,6 +172,15 @@ const DEFAULT_TAGS_MAP: Record<Locale, Array<{ keywords: string[]; tags: string[
   en: [
     { keywords: ['弓步', 'lunge', 'kitörés'], tags: ['Forward', 'Reverse', 'Bulgarian', 'Walking', 'Lateral'] },
     { keywords: ['深蹲', 'squat', 'guggolás'], tags: ['Back', 'Front', 'Goblet', 'Box', 'Narrow'] },
+    { keywords: ['臀橋', 'glute bridge', 'farhíd'], tags: ['Bodyweight', 'Resistance band', 'Single leg', 'Dumbbell', 'Elevated'] },
+    { keywords: ['臀推', 'hip thrust', 'csípőtolás'], tags: ['Couch/Chair', 'Resistance band', 'Dumbbell', 'Single leg', 'Barbell'] },
+    { keywords: ['保加利亞', 'bulgarian', 'bolgár'], tags: ['Couch/Chair', 'Bodyweight', 'Dumbbell', 'Glute-focused'] },
+    { keywords: ['跪姿後踢', '後踢', 'donkey kick', 'szamárrúgás'], tags: ['Bodyweight', 'Resistance band', 'Dumbbell', 'Straight leg'] },
+    { keywords: ['蚌式', 'clamshell', 'kagyló'], tags: ['Bodyweight', 'Resistance band', 'Elevated'] },
+    { keywords: ['消防栓', 'fire hydrant', 'kutyapisilés', 'tűzcsap'], tags: ['Bodyweight', 'Resistance band', 'Weighted'] },
+    { keywords: ['蛙式推臀', 'frog pump', 'békapumpa'], tags: ['Bodyweight', 'Dumbbell', 'Resistance band'] },
+    { keywords: ['側臥抬腿', 'side-lying leg raise', 'oldalsó lábemelés'], tags: ['Bodyweight', 'Resistance band', 'Ankle weight'] },
+    { keywords: ['臀部', 'glute', 'glutes', 'farizom'], tags: ['Home bodyweight', 'Resistance band', 'Dumbbell', 'Couch/Chair', 'Single leg'] },
     { keywords: ['臥推', 'bench press', 'mellnyomás'], tags: ['Barbell', 'Dumbbell', 'Incline', 'Decline', 'Close-grip'] },
     { keywords: ['伏地挺身', 'push-up', 'fekvőtámasz'], tags: ['Standard', 'Kneeling', 'Diamond', 'Narrow'] },
     { keywords: ['引體向上', 'pull-up', 'húzódzkodás'], tags: ['Overhand', 'Underhand', 'Neutral', 'Assisted'] },
@@ -157,6 +200,15 @@ const DEFAULT_TAGS_MAP: Record<Locale, Array<{ keywords: string[]; tags: string[
   hu: [
     { keywords: ['弓步', 'lunge', 'kitörés'], tags: ['Előre lépő', 'Hátra lépő', 'Bolgár', 'Sétáló', 'Oldalsó'] },
     { keywords: ['深蹲', 'squat', 'guggolás'], tags: ['Hátul guggoló', 'Elöl guggoló', 'Kehely', 'Zsámolyra', 'Szűk'] },
+    { keywords: ['臀橋', 'glute bridge', 'farhíd'], tags: ['Saját testsúly', 'Gumiszalaggal', 'Egy lábon', 'Kézisúlyzóval', 'Megemelt'] },
+    { keywords: ['臀推', 'hip thrust', 'csípőtolás'], tags: ['Kanapén/Széken', 'Gumiszalaggal', 'Kézisúlyzóval', 'Egy lábon', 'Rúddal'] },
+    { keywords: ['保加利亞', 'bulgarian', 'bolgár'], tags: ['Kanapén/Széken', 'Saját testsúly', 'Kézisúlyzóval', 'Farizom fókusz'] },
+    { keywords: ['跪姿後踢', '後踢', 'donkey kick', 'szamárrúgás'], tags: ['Saját testsúly', 'Gumiszalaggal', 'Kézisúlyzóval', 'Nyújtott lábbal'] },
+    { keywords: ['蚌式', 'clamshell', 'kagyló'], tags: ['Saját testsúly', 'Gumiszalaggal', 'Emelt lábbal'] },
+    { keywords: ['消防栓', 'fire hydrant', 'kutyapisilés', 'tűzcsap'], tags: ['Saját testsúly', 'Gumiszalaggal', 'Súllyal'] },
+    { keywords: ['蛙式推臀', 'frog pump', 'békapumpa'], tags: ['Saját testsúly', 'Kézisúlyzóval', 'Gumiszalaggal'] },
+    { keywords: ['側臥抬腿', 'side-lying leg raise', 'oldalsó lábemelés'], tags: ['Saját testsúly', 'Gumiszalaggal', 'Bokasúllyal'] },
+    { keywords: ['臀部', 'glute', 'glutes', 'farizom'], tags: ['Otthoni saját testsúly', 'Gumiszalaggal', 'Kézisúlyzóval', 'Kanapén/Széken', 'Egy lábon'] },
     { keywords: ['臥推', 'bench press', 'mellnyomás'], tags: ['Rúddal', 'Kézisúlyzóval', 'Ferde padon', 'Negatív padon'] },
     { keywords: ['伏地挺身', 'push-up', 'fekvőtámasz'], tags: ['Normál', 'Térdelő', 'Gyémánt', 'Szűk'] },
     { keywords: ['引體向上', 'pull-up', 'húzódzkodás'], tags: ['Felső fogás', 'Alsó fogás', 'Párhuzamos', 'Gumiszalaggal'] },

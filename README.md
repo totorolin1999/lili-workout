@@ -133,7 +133,8 @@ lili-workout/
 │       ├── 20261014_add_calculation_type.sql      # 新增計量模式欄位
 │       ├── 20261014_add_is_completed.sql         # 新增組數完成狀態欄位
 │       ├── 20261021_grant_table_permissions.sql  # 補充 PostgREST Data API 存取權限
-│       └── 20261024_add_exercise_tags.sql        # 新增動作變式標籤表與組數標籤欄位
+│       ├── 20261024_add_exercise_tags.sql        # 新增動作變式標籤表與組數標籤欄位
+│       └── 20261028_add_glutes_category_and_exercises.sql # 新增臀部分類與居家動作變式標籤種子資料
 ├── .env.example                  # 環境變數範例檔
 ├── next.config.ts                # Next.js 設定
 └── package.json                  # 專案依賴與腳本
@@ -170,6 +171,7 @@ npm install
 若您已部署過先前版本的資料庫，請依序在 Supabase SQL Editor 中執行 `supabase/migrations/` 內的歷程遷移檔案：
 - `20261021_grant_table_permissions.sql`：補齊 Data API 存取授權。
 - `20261024_add_exercise_tags.sql`：建立 `exercise_tags` 資料表並於 `workout_sets` 新增 `tag` 欄位。
+- `20261028_add_glutes_category_and_exercises.sql`：更新動作分類檢查條件支援 `glutes`，並匯入臀部內建動作與居家變式標籤（如彈力帶、沙發/椅子、自重、單腿等）。
 
 ### 3. 設定環境變數
 

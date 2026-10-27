@@ -23,6 +23,7 @@ interface CategoryItem {
 
 const CATEGORY_COLORS: Record<string, string> = {
   legs: '#3b82f6', // blue-500
+  glutes: '#ec4899', // pink-500
   chest: '#f43f5e', // rose-500
   back: '#10b981', // emerald-500
   shoulders: '#f59e0b', // amber-500

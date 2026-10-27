@@ -26,7 +26,7 @@ import {
 
 // ─── Types & Schema ──────────────────────────────────────────────────────────
 
-const CATEGORIES = ['legs', 'chest', 'back', 'shoulders', 'arms', 'core', 'cardio', 'other'] as const
+const CATEGORIES = ['legs', 'glutes', 'chest', 'back', 'shoulders', 'arms', 'core', 'cardio', 'other'] as const
 type Category = (typeof CATEGORIES)[number]
 
 const ExerciseFormSchema = z.object({
@@ -79,6 +79,7 @@ export default function ExerciseManager({ exercises: initialExercises, locale }:
 
   const categoryLabel: Record<Category, string> = {
     legs: t('categories.legs'),
+    glutes: t('categories.glutes'),
     chest: t('categories.chest'),
     back: t('categories.back'),
     shoulders: t('categories.shoulders'),

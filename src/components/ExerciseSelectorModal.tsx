@@ -13,7 +13,7 @@ import {
 } from '@/lib/exercises'
 import { cn } from '@/lib/utils'
 
-const CATEGORIES = ['legs', 'chest', 'back', 'shoulders', 'arms', 'core', 'cardio', 'other'] as const
+const CATEGORIES = ['legs', 'glutes', 'chest', 'back', 'shoulders', 'arms', 'core', 'cardio', 'other'] as const
 type Category = (typeof CATEGORIES)[number]
 
 interface ExerciseSelectorModalProps {
@@ -58,6 +58,7 @@ export default function ExerciseSelectorModal({
 
   const categoryLabel: Record<Category, string> = {
     legs: tEx('categories.legs'),
+    glutes: tEx('categories.glutes'),
     chest: tEx('categories.chest'),
     back: tEx('categories.back'),
     shoulders: tEx('categories.shoulders'),

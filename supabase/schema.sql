@@ -20,7 +20,7 @@ CREATE TABLE IF NOT EXISTS exercises (
   name_en     TEXT,
   name_zh     TEXT,
   category    TEXT NOT NULL CHECK (category IN (
-                  'legs','chest','back','shoulders','arms','core','cardio','other'
+                  'legs','glutes','chest','back','shoulders','arms','core','cardio','other'
                 )),
   calculation_type TEXT DEFAULT 'weight_reps' CHECK (calculation_type IN (
                   'weight_reps','reps','duration','distance_duration','reps_duration'
@@ -188,6 +188,16 @@ INSERT INTO exercises (name_hu, name_en, name_zh, category) VALUES
   ('Román felemelés', 'Romanian Deadlift', '羅馬尼亞硬舉', 'legs'),
   ('Lábnyomás (gép)', 'Leg Press', '腿部推舉', 'legs'),
   ('Vádli-emelés', 'Calf Raise', '提踵', 'legs'),
+
+  -- Farizom / Glutes (Home & Gym options)
+  ('Farhíd', 'Glute Bridge', '臀橋', 'glutes'),
+  ('Csípőtolás', 'Hip Thrust', '臀推', 'glutes'),
+  ('Bolgár guggolás', 'Bulgarian Split Squat', '保加利亞分腿蹲', 'glutes'),
+  ('Szamárrúgás', 'Donkey Kick', '跪姿後踢', 'glutes'),
+  ('Kagyló-gyakorlat', 'Clamshell', '蚌式開合', 'glutes'),
+  ('Oldalsó térdemelés (tűzcsap)', 'Fire Hydrant', '消防栓式', 'glutes'),
+  ('Békapumpa', 'Frog Pump', '蛙式推臀', 'glutes'),
+  ('Oldalsó lábemelés', 'Side-Lying Leg Raise', '側臥抬腿', 'glutes'),
 
   -- Törzs / Core
   ('Hasprés', 'Crunch', '捲腹', 'core'),

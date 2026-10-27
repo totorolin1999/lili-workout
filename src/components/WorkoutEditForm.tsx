@@ -34,7 +34,7 @@ import ExerciseSelectorModal from './ExerciseSelectorModal'
 
 // ─── Types & Schema ──────────────────────────────────────────────────────────
 
-const CATEGORIES = ['legs', 'chest', 'back', 'shoulders', 'arms', 'core', 'cardio', 'other'] as const
+const CATEGORIES = ['legs', 'glutes', 'chest', 'back', 'shoulders', 'arms', 'core', 'cardio', 'other'] as const
 type Category = (typeof CATEGORIES)[number]
 
 const SetSchema = z.object({
@@ -621,6 +621,7 @@ function ExerciseGroupCard({
 
   const categoryLabel: Record<Category, string> = {
     legs: tEx('categories.legs'),
+    glutes: tEx('categories.glutes'),
     chest: tEx('categories.chest'),
     back: tEx('categories.back'),
     shoulders: tEx('categories.shoulders'),
