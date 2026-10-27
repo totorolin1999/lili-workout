@@ -140,11 +140,11 @@ export function getPrimaryNameField(locale: Locale): keyof Pick<Exercise, 'name_
  */
 const DEFAULT_TAGS_MAP: Record<Locale, Array<{ keywords: string[]; tags: string[] }>> = {
   'zh-TW': [
+    { keywords: ['保加利亞', 'bulgarian', 'bolgár'], tags: ['沙發/椅子', '自重', '啞鈴', '臀部主導'] },
     { keywords: ['弓步', 'lunge', 'kitörés'], tags: ['前跨', '後跨', '保加利亞', '行走', '側步'] },
     { keywords: ['深蹲', 'squat', 'guggolás'], tags: ['背槓', '前槓', '高腳杯', '箱上', '窄距'] },
     { keywords: ['臀橋', 'glute bridge', 'farhíd'], tags: ['自重', '彈力帶', '單腿', '啞鈴', '墊高'] },
     { keywords: ['臀推', 'hip thrust', 'csípőtolás'], tags: ['沙發/椅子', '彈力帶', '啞鈴', '單腿', '槓鈴'] },
-    { keywords: ['保加利亞', 'bulgarian', 'bolgár'], tags: ['沙發/椅子', '自重', '啞鈴', '臀部主導'] },
     { keywords: ['跪姿後踢', '後踢', 'donkey kick', 'szamárrúgás'], tags: ['自重', '彈力帶', '負重啞鈴', '直腿'] },
     { keywords: ['蚌式', 'clamshell', 'kagyló'], tags: ['自重', '彈力帶', '抬腿蚌式'] },
     { keywords: ['消防栓', 'fire hydrant', 'kutyapisilés', 'tűzcsap'], tags: ['自重', '彈力帶', '負重'] },
@@ -170,11 +170,11 @@ const DEFAULT_TAGS_MAP: Record<Locale, Array<{ keywords: string[]; tags: string[
     { keywords: ['跳繩', 'jump rope', 'ugrókötél'], tags: ['雙迴旋', '單腳', '交叉'] },
   ],
   en: [
+    { keywords: ['保加利亞', 'bulgarian', 'bolgár'], tags: ['Couch/Chair', 'Bodyweight', 'Dumbbell', 'Glute-focused'] },
     { keywords: ['弓步', 'lunge', 'kitörés'], tags: ['Forward', 'Reverse', 'Bulgarian', 'Walking', 'Lateral'] },
     { keywords: ['深蹲', 'squat', 'guggolás'], tags: ['Back', 'Front', 'Goblet', 'Box', 'Narrow'] },
     { keywords: ['臀橋', 'glute bridge', 'farhíd'], tags: ['Bodyweight', 'Resistance band', 'Single leg', 'Dumbbell', 'Elevated'] },
     { keywords: ['臀推', 'hip thrust', 'csípőtolás'], tags: ['Couch/Chair', 'Resistance band', 'Dumbbell', 'Single leg', 'Barbell'] },
-    { keywords: ['保加利亞', 'bulgarian', 'bolgár'], tags: ['Couch/Chair', 'Bodyweight', 'Dumbbell', 'Glute-focused'] },
     { keywords: ['跪姿後踢', '後踢', 'donkey kick', 'szamárrúgás'], tags: ['Bodyweight', 'Resistance band', 'Dumbbell', 'Straight leg'] },
     { keywords: ['蚌式', 'clamshell', 'kagyló'], tags: ['Bodyweight', 'Resistance band', 'Elevated'] },
     { keywords: ['消防栓', 'fire hydrant', 'kutyapisilés', 'tűzcsap'], tags: ['Bodyweight', 'Resistance band', 'Weighted'] },
@@ -198,11 +198,11 @@ const DEFAULT_TAGS_MAP: Record<Locale, Array<{ keywords: string[]; tags: string[
     { keywords: ['跳繩', 'jump rope', 'ugrókötél'], tags: ['Double under', 'Single leg', 'Cross'] },
   ],
   hu: [
+    { keywords: ['保加利亞', 'bulgarian', 'bolgár'], tags: ['Kanapén/Széken', 'Saját testsúly', 'Kézisúlyzóval', 'Farizom fókusz'] },
     { keywords: ['弓步', 'lunge', 'kitörés'], tags: ['Előre lépő', 'Hátra lépő', 'Bolgár', 'Sétáló', 'Oldalsó'] },
     { keywords: ['深蹲', 'squat', 'guggolás'], tags: ['Hátul guggoló', 'Elöl guggoló', 'Kehely', 'Zsámolyra', 'Szűk'] },
     { keywords: ['臀橋', 'glute bridge', 'farhíd'], tags: ['Saját testsúly', 'Gumiszalaggal', 'Egy lábon', 'Kézisúlyzóval', 'Megemelt'] },
     { keywords: ['臀推', 'hip thrust', 'csípőtolás'], tags: ['Kanapén/Széken', 'Gumiszalaggal', 'Kézisúlyzóval', 'Egy lábon', 'Rúddal'] },
-    { keywords: ['保加利亞', 'bulgarian', 'bolgár'], tags: ['Kanapén/Széken', 'Saját testsúly', 'Kézisúlyzóval', 'Farizom fókusz'] },
     { keywords: ['跪姿後踢', '後踢', 'donkey kick', 'szamárrúgás'], tags: ['Saját testsúly', 'Gumiszalaggal', 'Kézisúlyzóval', 'Nyújtott lábbal'] },
     { keywords: ['蚌式', 'clamshell', 'kagyló'], tags: ['Saját testsúly', 'Gumiszalaggal', 'Emelt lábbal'] },
     { keywords: ['消防栓', 'fire hydrant', 'kutyapisilés', 'tűzcsap'], tags: ['Saját testsúly', 'Gumiszalaggal', 'Súllyal'] },
