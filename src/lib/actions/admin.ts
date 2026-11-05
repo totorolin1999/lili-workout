@@ -118,25 +118,7 @@ export async function checkIsAdmin(): Promise<{ isAdmin: boolean; userId?: strin
       return { isAdmin: true, userId: user.id, email: userEmail }
     }
   } catch {
-    // Table might not exist yet
-  }
-
-  // 3. Fallback: if no admin exists yet in profiles table at all and ADMIN_EMAILS is unset,
-  // allow the user to be admin so they can bootstrap their setup
-  if (adminEmails.length === 0) {
-    try {
-      const { count } = await supabase
-        .from('profiles')
-        .select('*', { count: 'exact', head: true })
-        .eq('role', 'admin')
-
-      if (count === 0) {
-        return { isAdmin: true, userId: user.id, email: userEmail }
-      }
-    } catch {
-      // Table doesn't exist, allow setup view
-      return { isAdmin: true, userId: user.id, email: userEmail }
-    }
+    // Ignore error
   }
 
   return { isAdmin: false, userId: user.id, email: userEmail }
