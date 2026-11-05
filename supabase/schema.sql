@@ -269,3 +269,114 @@ GRANT SELECT ON TABLE exercise_tags TO anon;
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE exercise_tags TO authenticated;
 GRANT ALL ON TABLE exercise_tags TO service_role;
 
+
+-- ─────────────────────────────────────────────────────────────
+-- PROFILES & ADMIN MANAGEMENT
+-- ─────────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS profiles (
+  id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  email TEXT,
+  display_name TEXT,
+  role TEXT NOT NULL DEFAULT 'member' CHECK (role IN ('admin', 'member')),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_profiles_role ON profiles (role);
+CREATE INDEX IF NOT EXISTS idx_profiles_email ON profiles (email);
+
+ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
+
+CREATE OR REPLACE FUNCTION is_admin(user_uid UUID DEFAULT auth.uid())
+RETURNS BOOLEAN AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM profiles WHERE id = user_uid AND role = 'admin'
+  );
+$$ LANGUAGE sql SECURITY DEFINER STABLE;
+
+CREATE POLICY "Users can read own profile or admins read all"
+  ON profiles FOR SELECT
+  USING (auth.uid() = id OR is_admin());
+
+CREATE POLICY "Users can update own display_name"
+  ON profiles FOR UPDATE
+  USING (auth.uid() = id OR is_admin())
+  WITH CHECK (
+    (auth.uid() = id AND role = (SELECT role FROM profiles WHERE id = auth.uid()))
+    OR is_admin()
+  );
+
+CREATE POLICY "Users can insert own profile"
+  ON profiles FOR INSERT
+  WITH CHECK (auth.uid() = id OR is_admin());
+
+-- Admin policies for workouts and sets
+CREATE POLICY "Admins can view all workouts"
+  ON workouts FOR SELECT
+  USING (is_admin());
+
+CREATE POLICY "Admins can delete any workout"
+  ON workouts FOR DELETE
+  USING (is_admin());
+
+CREATE POLICY "Admins can view all workout sets"
+  ON workout_sets FOR SELECT
+  USING (is_admin());
+
+CREATE POLICY "Admins can delete any workout set"
+  ON workout_sets FOR DELETE
+  USING (is_admin());
+
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE profiles TO authenticated;
+GRANT SELECT ON TABLE profiles TO anon;
+GRANT ALL ON TABLE profiles TO service_role;
+
+CREATE OR REPLACE FUNCTION handle_new_user()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO profiles (id, email, display_name, role)
+  VALUES (
+    new.id,
+    new.email,
+    COALESCE(
+      new.raw_user_meta_data->>'full_name',
+      new.raw_user_meta_data->>'name',
+      split_part(new.email, '@', 1),
+      'Member'
+    ),
+    'member'
+  )
+  ON CONFLICT (id) DO UPDATE
+  SET email = EXCLUDED.email;
+  RETURN new;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION handle_new_user();
+
+
+
+
+CREATE OR REPLACE FUNCTION set_admin_role_by_email(admin_email TEXT)
+RETURNS void AS $$
+BEGIN
+  INSERT INTO profiles (id, email, display_name, role)
+  SELECT
+    id,
+    email,
+    COALESCE(raw_user_meta_data->>'full_name', raw_user_meta_data->>'name', split_part(email, '@', 1), 'Member'),
+    'member'
+  FROM auth.users
+  ON CONFLICT (id) DO UPDATE SET email = EXCLUDED.email;
+
+  UPDATE profiles
+  SET role = 'admin'
+  WHERE lower(email) = lower(admin_email);
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+GRANT EXECUTE ON FUNCTION set_admin_role_by_email(TEXT) TO authenticated;
+GRANT EXECUTE ON FUNCTION set_admin_role_by_email(TEXT) TO anon;

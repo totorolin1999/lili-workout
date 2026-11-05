@@ -79,6 +79,24 @@
 - 專為單手手機操作優化的操作介面與流暢響應式佈局。
 - 具備完整 Web App Manifest 與圖示設定，支援加入至 iOS / Android 手機主畫面作為獨立 App (PWA) 使用。
 
+### 9. 🛡️ 管理員會員管理儀表板 (Admin Member Management Dashboard)
+- **全站會員數據總覽 (KPI Metrics)**：
+  - 即時統計總會員人數、30 天活躍會員人數與活躍率、全站累積訓練場次、累積完成總組數。
+- **多維度搜尋、篩選與排序 (Search & Filters)**：
+  - 即時模糊搜尋會員 Email、暱稱或使用者 ID。
+  - 角色篩選（全部 / 管理員 / 一般會員）與活躍度篩選（近 7 天活躍 / 近 30 天活躍 / 尚未開始訓練）。
+  - 多種排序方式（最後訓練時間、註冊時間、課表數量、名稱）。
+- **會員詳細抽屜與訓練明細 (Member Details & Workouts Drawer)**：
+  - 檢視會員基本資料、肌群訓練分佈佔比與該會員建立的自訂動作庫。
+  - 逐筆展開查看會員歷史訓練課表（日期、課表名稱、動作名稱與組數）。
+  - 支援管理員權限切換（Promote to Admin / Demote to Member）、暱稱編輯與異常課表安全刪除。
+- **資料匯出 (CSV Export)**：
+  - 一鍵將會員清單與統計數據匯出為 CSV 報表（內建 UTF-8 BOM，相容繁中 Excel 無亂碼）。
+- **嚴謹安全隔離 (Role-Based RLS & Admin Guard)**：
+  - 後端 Server Action 與 PostgreSQL Row Level Security (RLS) 雙層驗證。
+  - 非管理員嘗試造訪自動呈現友善之權限阻擋頁面；管理員登入時，導覽列自動顯現專屬後台入口，並支援在大螢幕桌面端流暢展開寬版管理介面。
+
+
 ---
 
 ## 🛠️ 技術棧 (Tech Stack)
@@ -103,16 +121,18 @@ lili-workout/
 ├── src/
 │   ├── app/                      # Next.js App Router 路由
 │   │   ├── [locale]/             # 語系前綴動態路由
+│   │   │   ├── admin/            # 管理員會員管理儀表板
 │   │   │   ├── exercises/        # 動作庫與標籤管理頁面
 │   │   │   ├── history/          # 訓練歷史紀錄頁面 (月曆/清單/圖表)
 │   │   │   ├── login/            # 魔法連結登入頁面
-│   │   │   ├── layout.tsx        # 語系佈局 (導覽列、主題切換、語言切換、認證守衛)
+│   │   │   ├── layout.tsx        # 語系佈局 (導覽列、主題切換、語言切換、管理員權限入口)
 │   │   │   └── page.tsx          # 今日訓練記錄器首頁 (支援 ?date 參數)
 │   │   ├── auth/callback/        # Supabase Auth 授權跳轉路由處理
 │   │   ├── globals.css           # Tailwind v4 全域樣式與藍白主題 Design Tokens
 │   │   ├── layout.tsx            # 根佈局 (HTML 結構、FOUC 防閃爍腳本、Geist 字體)
 │   │   └── manifest.ts           # PWA Web App Manifest 設定檔
 │   ├── components/               # React 互動元件
+│   │   ├── AdminDashboard.tsx        # 管理員會員管理儀表板 (KPI、清單篩選排序、會員抽屜、CSV 匯出)
 │   │   ├── CurrentDateLabel.tsx      # 本地化日期時間標籤
 │   │   ├── ExerciseManager.tsx       # 動作庫增刪與自訂標籤管理介面
 │   │   ├── ExerciseSelectorModal.tsx # 彈窗式動作選取器 (搜尋動作/標籤與分類篩選)
@@ -128,6 +148,7 @@ lili-workout/
 │   ├── i18n/                     # next-intl 路由轉發與語系配置
 │   └── lib/                      # 核心工具函式與 Server Actions
 │       ├── actions/
+│       │   ├── admin.ts          # 管理員會員資料查詢、權限變更、訓練明細管理 Server Actions
 │       │   ├── auth.ts           # 登入、登出與驗證 Server Actions
 │       │   ├── exercise.ts       # 動作庫與變式標籤 CRUD Server Actions
 │       │   └── workout.ts        # 訓練課表與組數 CRUD、前次紀錄查詢、同日課表排序 Server Actions
@@ -142,7 +163,8 @@ lili-workout/
 │       ├── 20261014_add_is_completed.sql         # 新增組數完成狀態欄位
 │       ├── 20261021_grant_table_permissions.sql  # 補充 PostgREST Data API 存取權限
 │       ├── 20261024_add_exercise_tags.sql        # 新增動作變式標籤表與組數標籤欄位
-│       └── 20261028_add_glutes_category_and_exercises.sql # 新增臀部分類與居家動作變式標籤種子資料
+│       ├── 20261028_add_glutes_category_and_exercises.sql # 新增臀部分類與居家動作變式標籤種子資料
+│       └── 20261105_add_profiles_and_admin.sql   # 新增 profiles 會員表、自動同步觸發器與管理員 RLS 權限
 ├── .env.example                  # 環境變數範例檔
 ├── next.config.ts                # Next.js 設定
 └── package.json                  # 專案依賴與腳本
@@ -166,6 +188,7 @@ npm install
 1. 前往 [Supabase](https://supabase.com/) 建立一個新專案。
 2. 進入 Supabase 控制台的 **SQL Editor**。
 3. 開啟本專案中的 `supabase/schema.sql`，將內容貼上至 SQL Editor 中執行。這將建立：
+   - `profiles` 表：使用者個人基本資料與權限角色（`admin` / `member`），含註冊自動同步觸發器。
    - `exercises` 表：動作庫（含多語言名稱與計量方式 `calculation_type`）。
    - `exercise_tags` 表：動作變式標籤（支援全域內建與使用者自訂標籤）。
    - `workouts` 表：訓練紀錄主檔（日期、標題、筆記）。
@@ -182,6 +205,7 @@ npm install
 - `20261021_grant_table_permissions.sql`：補齊 PostgREST Data API 存取授權（符合 Supabase 資料表存取安全性規範）。
 - `20261024_add_exercise_tags.sql`：建立 `exercise_tags` 資料表並於 `workout_sets` 新增動作變式標籤 `tag` 欄位。
 - `20261028_add_glutes_category_and_exercises.sql`：更新動作分類檢查條件加入 `glutes` 類別，匯入 8 項居家與專業臀部訓練動作種子資料，並清理冗餘全域標籤以啟用客戶端動態本地化解析。
+- `20261105_add_profiles_and_admin.sql`：建立 `profiles` 會員資料表、同步觸發器、管理員專屬 RLS 存取原則與統計 RPC 函式。
 
 ### 3. 設定環境變數
 
@@ -191,7 +215,7 @@ npm install
 cp .env.example .env.local
 ```
 
-編輯 `.env.local` 填入您的 Supabase 專案資訊：
+編輯 `.env.local` 填入您的 Supabase 專案資訊與管理員帳號：
 
 ```env
 # Supabase
@@ -200,15 +224,20 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=YOUR_ANON_KEY
 
 # App URL (用於 Magic Link 登入跳轉重定向)
 NEXT_PUBLIC_APP_URL=http://localhost:3000
+
+# 管理員 Email 清單（選填，多個 Email 以逗號隔開）
+ADMIN_EMAILS=admin@example.com
 ```
 
-### 4. 啟動開發伺服器
+### 4. 啟動開發伺服器與訪問管理後台
 
 ```bash
 npm run dev
 ```
 
 開啟瀏覽器造訪 [http://localhost:3000](http://localhost:3000)，系統將自動依據瀏覽器偏好導向對應語系（如 `/hu`、`/zh-TW` 或 `/en`）。
+- **會員管理員後台**：以管理員 Email 登入後，點擊頂部或底部導覽列的盾牌圖示 🛡️ 即可進入管理員會員儀表板（亦可直接造訪 `/[locale]/admin`）。
+
 
 ---
 
