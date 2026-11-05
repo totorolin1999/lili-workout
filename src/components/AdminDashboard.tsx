@@ -198,18 +198,27 @@ export default function AdminDashboard({
     })
   }
 
-  // Export CSV
+  // Export CSV with CSV formula injection protection
   const handleExportCSV = () => {
+    const sanitizeCSV = (val: any) => {
+      const str = String(val ?? '')
+      // Prevent spreadsheet formula injection (=, +, -, @, tab)
+      if (/^[=\+\-@\t\r]/.test(str)) {
+        return `"'${str.replace(/"/g, '""')}"`
+      }
+      return `"${str.replace(/"/g, '""')}"`
+    }
+
     const headers = ['User ID', 'Email', 'Display Name', 'Role', 'Created At', 'Workouts Count', 'Sets Count', 'Last Workout Date']
     const rows = filteredMembers.map((m) => [
-      m.id,
-      m.email,
-      `"${m.display_name.replace(/"/g, '""')}"`,
-      m.role,
-      m.created_at,
+      sanitizeCSV(m.id),
+      sanitizeCSV(m.email),
+      sanitizeCSV(m.display_name),
+      sanitizeCSV(m.role),
+      sanitizeCSV(m.created_at),
       m.workouts_count,
       m.sets_count,
-      m.last_workout_date || 'N/A',
+      sanitizeCSV(m.last_workout_date || 'N/A'),
     ])
 
     const csvContent = '\uFEFF' + [headers.join(','), ...rows.map((e) => e.join(','))].join('\n')

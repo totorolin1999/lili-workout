@@ -357,26 +357,3 @@ CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION handle_new_user();
 
-
-
-
-CREATE OR REPLACE FUNCTION set_admin_role_by_email(admin_email TEXT)
-RETURNS void AS $$
-BEGIN
-  INSERT INTO profiles (id, email, display_name, role)
-  SELECT
-    id,
-    email,
-    COALESCE(raw_user_meta_data->>'full_name', raw_user_meta_data->>'name', split_part(email, '@', 1), 'Member'),
-    'member'
-  FROM auth.users
-  ON CONFLICT (id) DO UPDATE SET email = EXCLUDED.email;
-
-  UPDATE profiles
-  SET role = 'admin'
-  WHERE lower(email) = lower(admin_email);
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-
-GRANT EXECUTE ON FUNCTION set_admin_role_by_email(TEXT) TO authenticated;
-GRANT EXECUTE ON FUNCTION set_admin_role_by_email(TEXT) TO anon;

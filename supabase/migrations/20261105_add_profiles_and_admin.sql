@@ -184,27 +184,6 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 GRANT EXECUTE ON FUNCTION public.get_admin_member_stats() TO authenticated;
 
+-- Ensure any legacy unauthenticated promotion functions are dropped
+DROP FUNCTION IF EXISTS public.set_admin_role_by_email(TEXT);
 
--- 10. RPC TO SYNC PROFILES AND ELEVATE ADMIN BY EMAIL
-CREATE OR REPLACE FUNCTION public.set_admin_role_by_email(admin_email TEXT)
-RETURNS void AS $$
-BEGIN
-  -- Synchronize all auth.users to profiles
-  INSERT INTO public.profiles (id, email, display_name, role)
-  SELECT
-    id,
-    email,
-    COALESCE(raw_user_meta_data->>'full_name', raw_user_meta_data->>'name', split_part(email, '@', 1), 'Member'),
-    'member'
-  FROM auth.users
-  ON CONFLICT (id) DO UPDATE SET email = EXCLUDED.email;
-
-  -- Set admin role for specified email
-  UPDATE public.profiles
-  SET role = 'admin'
-  WHERE lower(email) = lower(admin_email);
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-
-GRANT EXECUTE ON FUNCTION public.set_admin_role_by_email(TEXT) TO authenticated;
-GRANT EXECUTE ON FUNCTION public.set_admin_role_by_email(TEXT) TO anon;

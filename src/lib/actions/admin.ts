@@ -83,26 +83,6 @@ export async function checkIsAdmin(): Promise<{ isAdmin: boolean; userId?: strin
 
   // 1. Check if user's email matches ADMIN_EMAILS environment variable
   if (userEmail && adminEmails.includes(userEmail)) {
-    // If profiles table exists, ensure this user has role 'admin'
-    try {
-      await supabase.rpc('set_admin_role_by_email', { admin_email: userEmail })
-    } catch {
-      // Fallback: try direct upsert if service role client available
-      try {
-        const adminClient = getServiceRoleClient() || supabase
-        await adminClient
-          .from('profiles')
-          .upsert({
-            id: user.id,
-            email: userEmail,
-            role: 'admin',
-            display_name: user.user_metadata?.full_name || user.user_metadata?.name || userEmail.split('@')[0],
-            updated_at: new Date().toISOString(),
-          })
-      } catch {
-        // Ignore if table not yet created
-      }
-    }
     return { isAdmin: true, userId: user.id, email: userEmail }
   }
 
@@ -233,6 +213,8 @@ export async function getAdminMembersSummary(): Promise<{
   }
 }
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
 /**
  * Fetch detailed workout history and statistics for a specific member.
  */
@@ -243,6 +225,10 @@ export async function getMemberFullDetails(memberId: string): Promise<{
   const adminCheck = await checkIsAdmin()
   if (!adminCheck.isAdmin) {
     return { error: 'Unauthorized: Admin privileges required.' }
+  }
+
+  if (!UUID_REGEX.test(memberId)) {
+    return { error: 'Invalid member ID format.' }
   }
 
   const supabase = await createClient()
@@ -394,6 +380,14 @@ export async function updateMemberRole(
     return { error: 'Unauthorized: Admin privileges required.' }
   }
 
+  if (!UUID_REGEX.test(memberId)) {
+    return { error: 'Invalid member ID format.' }
+  }
+
+  if (newRole !== 'admin' && newRole !== 'member') {
+    return { error: 'Invalid role specified.' }
+  }
+
   // Safety: Prevent admin from demoting themselves if they are the current user
   if (adminCheck.userId === memberId && newRole !== 'admin') {
     return { error: 'You cannot demote your own account from administrator.' }
@@ -401,6 +395,22 @@ export async function updateMemberRole(
 
   const supabase = await createClient()
   const privilegedClient = getServiceRoleClient() || supabase
+
+  // Prevent demoting an account configured in ADMIN_EMAILS
+  const { data: targetProfile } = await privilegedClient
+    .from('profiles')
+    .select('email')
+    .eq('id', memberId)
+    .single()
+
+  const adminEmails = (process.env.ADMIN_EMAILS ?? '')
+    .split(',')
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean)
+
+  if (targetProfile?.email && adminEmails.includes(targetProfile.email.toLowerCase()) && newRole !== 'admin') {
+    return { error: 'Cannot demote an administrator configured via ADMIN_EMAILS environment variable.' }
+  }
 
   const { error } = await privilegedClient
     .from('profiles')
@@ -427,9 +437,17 @@ export async function updateMemberDisplayName(
     return { error: 'Unauthorized: Admin privileges required.' }
   }
 
+  if (!UUID_REGEX.test(memberId)) {
+    return { error: 'Invalid member ID format.' }
+  }
+
   const cleanName = displayName.trim()
   if (!cleanName) {
     return { error: 'Display name cannot be empty.' }
+  }
+
+  if (cleanName.length > 50) {
+    return { error: 'Display name cannot exceed 50 characters.' }
   }
 
   const supabase = await createClient()
@@ -457,6 +475,10 @@ export async function deleteMemberWorkout(
   const adminCheck = await checkIsAdmin()
   if (!adminCheck.isAdmin) {
     return { error: 'Unauthorized: Admin privileges required.' }
+  }
+
+  if (!UUID_REGEX.test(workoutId)) {
+    return { error: 'Invalid workout ID format.' }
   }
 
   const supabase = await createClient()
