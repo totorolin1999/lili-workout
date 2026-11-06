@@ -24,7 +24,18 @@ export async function updateSession(request: NextRequest) {
   )
 
   // Refreshing the auth token
-  await supabase.auth.getUser()
+  const { error } = await supabase.auth.getUser()
+
+  // If session recovery fails (e.g. invalid/expired refresh token), clear stale auth cookies
+  // to prevent repeated 400 refresh_token_not_found errors across subsequent requests
+  if (error) {
+    request.cookies.getAll().forEach((cookie) => {
+      if (cookie.name.startsWith('sb-')) {
+        request.cookies.delete(cookie.name)
+        supabaseResponse.cookies.delete(cookie.name)
+      }
+    })
+  }
 
   return supabaseResponse
 }
