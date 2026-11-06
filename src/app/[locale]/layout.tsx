@@ -43,8 +43,8 @@ export default async function LocaleLayout(props: LayoutProps<'/[locale]'>) {
   return (
     <NextIntlClientProvider messages={messages} locale={locale}>
       <div className="min-h-screen bg-background flex flex-col">
-        {/* App shell — mobile-width by default, expands for admin dashboard */}
-        <div className="w-full max-w-md has-[.admin-wide-container]:max-w-5xl mx-auto flex flex-col min-h-screen
+        {/* App shell — mobile-width by default, expands for admin dashboard & system design simulator */}
+        <div className="w-full max-w-md has-[.admin-wide-container]:max-w-5xl has-[.system-design-container]:max-w-6xl mx-auto flex flex-col min-h-screen
                         border-x border-border/30 shadow-xl bg-background transition-[max-width]">
           {/* Top nav bar */}
           {user && (

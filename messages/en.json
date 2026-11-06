@@ -265,5 +265,16 @@
     "saveChanges": "Save Changes",
     "updateSuccess": "Updated successfully",
     "never": "Never"
+  },
+  "systemDesign": {
+    "title": "System Design & Architecture Simulator",
+    "subtitle": "Interactive full-stack architecture, data flow simulation, ERD data models, and RLS security visualization",
+    "badge": "Architecture Simulator",
+    "backToApp": "Back to App",
+    "tabArchitecture": "Architecture",
+    "tabFlow": "Flow Simulation",
+    "tabDatabase": "Database ERD",
+    "tabSecurity": "Security & RLS",
+    "tabLab": "Logic Lab"
   }
 }

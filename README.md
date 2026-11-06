@@ -96,6 +96,23 @@
   - 後端 Server Action 與 PostgreSQL Row Level Security (RLS) 雙層驗證。
   - 非管理員嘗試造訪自動呈現友善之權限阻擋頁面；管理員登入時，導覽列自動顯現專屬後台入口，並支援在大螢幕桌面端流暢展開寬版管理介面。
 
+### 10. 🏛️ 互動式系統設計與架構模擬器 (Interactive System Design Simulator)
+- **專屬技術展示路由 (`/[locale]/system-design`)**：
+  - 未列於前台導覽列（Navbar），專為作品集展示、技術面試、系統架構審查與開源文件化打造。
+  - 無論是否登入皆可透過專屬網址直接存取（例如：`/zh-TW/system-design`）。
+- **端到端三層全景架構圖 (Architecture Blueprint)**：
+  - 視覺化劃分 Client（Next.js 16 App Router、React 19、Tailwind v4）、Server（Proxy Middleware、Server Actions）與 Backend（Supabase PostgreSQL、RLS、Magic Link Auth）。
+  - 支援點擊任一區塊即時展開職責、代碼路徑、核心亮點與架構權衡（Trade-offs）。
+- **核心資料流即時模擬器 (Interactive Flow Simulator)**：
+  - 步進式與自動播放模擬四大業務流程：課表儲存、無密碼魔法連結登入、同日課表拖曳即時排序、匈牙利語優先多語備用鏈。
+  - 附帶 Payload 資料負載與程式碼調用預覽。
+- **資料庫實體關聯圖 (Interactive ERD & Schema)**：
+  - 完整呈現 5 大核心資料表（`profiles`, `workouts`, `workout_sets`, `exercises`, `exercise_tags`）之欄位、主外鍵約束與 `ON DELETE CASCADE` 級聯刪除機制。
+- **Row Level Security (RLS) 安全沙盒矩陣**：
+  - 互動切換 4 種操作角色（會員 A/B、管理員、訪客）與 6 種資料庫操作，即時演算並呈現 RLS 權限核可（Granted ✅）或阻斷（Denied ❌）原因。
+- **核心演算法邏輯實驗室 (Algorithms Lab)**：
+  - 內建配速即時換算器（調用 `cardio.ts`）、多語備用鏈測試器（調用 `exercises.ts`）與五大計量模式矩陣。
+
 
 ---
 
@@ -125,6 +142,7 @@ lili-workout/
 │   │   │   ├── exercises/        # 動作庫與標籤管理頁面
 │   │   │   ├── history/          # 訓練歷史紀錄頁面 (月曆/清單/圖表)
 │   │   │   ├── login/            # 魔法連結登入頁面
+│   │   │   ├── system-design/    # 互動式系統架構與設計模擬器 (未列於導覽列之專屬展示路由)
 │   │   │   ├── layout.tsx        # 語系佈局 (導覽列、主題切換、語言切換、管理員權限入口)
 │   │   │   └── page.tsx          # 今日訓練記錄器首頁 (支援 ?date 參數)
 │   │   ├── auth/callback/        # Supabase Auth 授權跳轉路由處理
@@ -138,6 +156,7 @@ lili-workout/
 │   │   ├── ExerciseSelectorModal.tsx # 彈窗式動作選取器 (搜尋動作/標籤與分類篩選)
 │   │   ├── LanguageSwitcher.tsx      # 多語系下拉切換選單
 │   │   ├── LoginForm.tsx             # Magic Link 電子郵件登入表單
+│   │   ├── SystemDesignSimulator.tsx # 系統全景架構圖、資料流模擬器、ERD 與 RLS 沙盒元件
 │   │   ├── ThemeToggle.tsx           # 一鍵切換明暗模式按鈕
 │   │   ├── WorkoutAnalytics.tsx      # 肌群訓練分佈 SVG 甜甜圈圖表與週期篩選
 │   │   ├── WorkoutCalendar.tsx       # 互動式訓練月曆與月份統計

@@ -265,5 +265,16 @@
     "saveChanges": "儲存變更",
     "updateSuccess": "更新成功",
     "never": "從未"
+  },
+  "systemDesign": {
+    "title": "系統架構與設計模擬器",
+    "subtitle": "全端技術架構、互動式資料流、資料庫關聯 (ERD) 與安全隔離機制視覺化展示",
+    "badge": "架構模擬器",
+    "backToApp": "返回應用程式",
+    "tabArchitecture": "全景架構",
+    "tabFlow": "流程模擬",
+    "tabDatabase": "資料庫模型",
+    "tabSecurity": "安全與 RLS",
+    "tabLab": "核心演算實驗室"
   }
 }

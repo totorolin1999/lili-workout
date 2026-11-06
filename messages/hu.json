@@ -265,5 +265,16 @@
     "saveChanges": "Módosítások mentése",
     "updateSuccess": "Sikeresen frissítve",
     "never": "Soha"
+  },
+  "systemDesign": {
+    "title": "Rendszertervezés és architektúra-szimulátor",
+    "subtitle": "Interaktív full-stack architektúra, adatfolyam-szimuláció, ERD adatmodellek és RLS biztonsági megjelenítés",
+    "badge": "Architektúra szimulátor",
+    "backToApp": "Vissza az alkalmazásba",
+    "tabArchitecture": "Architektúra",
+    "tabFlow": "Folyamatszimuláció",
+    "tabDatabase": "Adatbázis ERD",
+    "tabSecurity": "Biztonság és RLS",
+    "tabLab": "Logikai labor"
   }
 }
