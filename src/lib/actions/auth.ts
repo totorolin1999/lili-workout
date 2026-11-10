@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
+import { headers } from 'next/headers'
 
 /**
  * Sends a Magic Link email to the user.
@@ -10,10 +11,15 @@ import { revalidatePath } from 'next/cache'
 export async function signInWithMagicLink(email: string): Promise<{ error?: string }> {
   const supabase = await createClient()
 
+  const headerList = await headers()
+  const host = headerList.get('host')
+  const proto = headerList.get('x-forwarded-proto') ?? 'http'
+  const origin = host ? `${proto}://${host}` : (process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000')
+
   const { error } = await supabase.auth.signInWithOtp({
     email,
     options: {
-      emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback`,
+      emailRedirectTo: `${origin}/auth/callback`,
     },
   })
 

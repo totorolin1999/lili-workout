@@ -43,3 +43,9 @@ next-env.d.ts
 
 # repomix
 repomix-output.*
+
+# backups
+*.dump
+*_backup.sql
+*.backup
+

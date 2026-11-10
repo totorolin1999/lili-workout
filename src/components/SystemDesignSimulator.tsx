@@ -15,13 +15,11 @@ import {
   ChevronRight,
   ChevronLeft,
   CheckCircle2,
-  XCircle,
   Code2,
   Table,
   Key,
   Globe,
   Timer,
-  ExternalLink,
   ShieldAlert,
   Sparkles,
   Server,
@@ -220,6 +218,7 @@ function ArchitectureTab() {
         '徹底免除密碼外洩、弱密碼或忘記密碼的管理負擔',
         'PKCE 交換成功後自動觸發 PostgreSQL on_auth_user_created 建立會員資料',
         '搭配 @supabase/ssr 寫入 Secure, HttpOnly, SameSite=Lax 之 Session Cookie',
+        '本機開發整合 Mailpit 虛擬 SMTP：攔截 Magic Link 免寄真實郵件，無發信配額限制且零資安外洩',
       ],
       tradeOffs: '對個人日常健身記錄極度友善；若需要第三方 OAuth (Google, Apple) 可無縫擴充。',
     },
@@ -230,6 +229,8 @@ function ArchitectureTab() {
       desc: '託管於 Supabase 的 PostgreSQL 16+。所有資料表皆嚴格開啟 Row Level Security (RLS)，保證使用者資料絕對物理隔離。',
       highlights: [
         '全表啟用 RLS：透過 auth.uid() = user_id 原則，未授權者在 SQL 底層即被阻絕',
+        '雙軌環境隔離架構：本機採用 Docker 獨立容器，線上採用 Supabase 雲端託管，環境徹底解耦',
+        '嚴格 Migration 遷移生命週期：標準 14 碼時間戳腳本搭配 supabase db reset 秒級重建乾淨資料庫',
         '完整的外鍵約束與 ON DELETE CASCADE 級聯清理，防止孤兒資料殘留',
         '管理員角色原則：profiles.role = "admin" 享有跨會員監控與安全刪除權限',
       ],
@@ -1350,7 +1351,7 @@ function LogicLabTab({ locale }: { locale: string }) {
 
             <div>
               <label className="text-xs font-semibold text-muted-foreground block mb-1">
-                時間 (支援 "27:30", "1:15:00", 或純分鐘 "30")
+                時間 (支援「27:30」、「1:15:00」或純分鐘「30」)
               </label>
               <input
                 type="text"

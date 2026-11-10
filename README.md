@@ -113,6 +113,16 @@
 - **核心演算法邏輯實驗室 (Algorithms Lab)**：
   - 內建配速即時換算器（調用 `cardio.ts`）、多語備用鏈測試器（調用 `exercises.ts`）與五大計量模式矩陣。
 
+### 11. 🛡️ 雙軌環境與資料隔離架構 (Dual-Track Environment & Zero-Leakage Isolation)
+- **本地獨立容器隔離 (Local Container Isolation)**：
+  - 透過 Docker 容器化技術執行完整本機 Supabase 實例（PostgreSQL、GoTrue Auth、Storage、Studio 與 Mailpit）。
+  - 開發、除錯與 Migration 驗證 100% 於本機封閉執行，從根源杜絕測試行為污染線上正式數據。
+- **虛擬郵件攔截器 (Mailpit Virtual SMTP)**：
+  - 本地整合 Mailpit 伺服器，Magic Link 驗證信件本機即時攔截，無需發送真實 Email，零發信額度消耗且杜絕測試信外洩風險。
+- **嚴謹遷移歷程管理 (Standard 14-Digit Migrations & Reset)**：
+  - 資料庫架構異動均納入 `supabase/migrations/` 標準 14 碼時間戳腳本管轄，支援 `npx supabase db reset` 秒級重現乾淨初始資料庫。
+- **生產級資安防護**：
+  - 正式機備份檔（`*.sql`, `*.dump`）與敏感環境變數透過 `.gitignore` 嚴格隔離，保證生產機金鑰與用戶個資零落地。
 
 ---
 
@@ -123,6 +133,7 @@
 - **語言**：[TypeScript 5](https://www.typescriptlang.org/)
 - **樣式與主題**：[Tailwind CSS v4](https://tailwindcss.com/) (CSS Design Tokens, `@custom-variant dark`)
 - **後端與資料庫**：[Supabase](https://supabase.com/) (PostgreSQL + RLS + Auth + `@supabase/ssr`)
+- **本地容器與開發環境**：[Docker Desktop](https://www.docker.com/) + [Supabase CLI](https://supabase.com/docs/guides/cli) + [Mailpit](https://github.com/axllent/mailpit)
 - **多語系套件**：[next-intl](https://next-intl.dev/)
 - **表單驗證**：[React Hook Form](https://react-hook-form.com/) + [Zod](https://zod.dev/)
 - **圖示庫**：[Lucide React](https://lucide.dev/)
@@ -175,15 +186,17 @@ lili-workout/
 │       ├── cardio.ts             # 有氧配速換算與時間字串解析模組
 │       ├── exercises.ts          # 動作型別、分類、多語系顯示、計量模式與預設變式標籤定義
 │       └── utils.ts              # 通用樣式輔助函式 (clsx + tailwind-merge)
-├── supabase/                     # Supabase 資料庫腳本
-│   ├── schema.sql                # 主資料表結構、RLS 策略、Data API 權限與初始動作 Seed
-│   └── migrations/               # 資料庫歷程遷移腳本
-│       ├── 20261014_add_calculation_type.sql      # 新增計量模式欄位
-│       ├── 20261014_add_is_completed.sql         # 新增組數完成狀態欄位
-│       ├── 20261021_grant_table_permissions.sql  # 補充 PostgREST Data API 存取權限
-│       ├── 20261024_add_exercise_tags.sql        # 新增動作變式標籤表與組數標籤欄位
-│       ├── 20261028_add_glutes_category_and_exercises.sql # 新增臀部分類與居家動作變式標籤種子資料
-│       └── 20261105_add_profiles_and_admin.sql   # 新增 profiles 會員表、自動同步觸發器與管理員 RLS 權限
+├── supabase/                     # Supabase 資料庫腳本與本機容器配置
+│   ├── config.toml               # Supabase CLI 本地容器與服務設定檔
+│   ├── schema.sql                # 主資料表結構完整參考檔案
+│   └── migrations/               # 資料庫歷程遷移腳本（標準 14 碼時間戳）
+│       ├── 20261010000000_initial_schema.sql      # 初始資料庫架構（動作、課表、組數主表）
+│       ├── 20261014151700_add_calculation_type.sql # 新增計量模式欄位
+│       ├── 20261014203200_add_is_completed.sql    # 新增組數完成狀態欄位
+│       ├── 20261021173200_grant_table_permissions.sql # 補充 PostgREST Data API 存取權限
+│       ├── 20261024232900_add_exercise_tags.sql   # 新增動作變式標籤表與組數標籤欄位
+│       ├── 20261028013400_add_glutes_category_and_exercises.sql # 新增臀部分類與居家動作種子資料
+│       └── 20261105191100_add_profiles_and_admin.sql # 新增 profiles 會員表、同步觸發器與管理員 RLS
 ├── .env.example                  # 環境變數範例檔
 ├── next.config.ts                # Next.js 設定
 └── package.json                  # 專案依賴與腳本
@@ -203,50 +216,51 @@ npm install
 
 ### 2. 設定 Supabase 資料庫
 
-#### 全新安裝 (Fresh Setup)
-1. 前往 [Supabase](https://supabase.com/) 建立一個新專案。
-2. 進入 Supabase 控制台的 **SQL Editor**。
-3. 開啟本專案中的 `supabase/schema.sql`，將內容貼上至 SQL Editor 中執行。這將建立：
-   - `profiles` 表：使用者個人基本資料與權限角色（`admin` / `member`），含註冊自動同步觸發器。
-   - `exercises` 表：動作庫（含多語言名稱與計量方式 `calculation_type`）。
-   - `exercise_tags` 表：動作變式標籤（支援全域內建與使用者自訂標籤）。
-   - `workouts` 表：訓練紀錄主檔（日期、標題、筆記）。
-   - `workout_sets` 表：訓練各組明細（重量、次數、距離、秒數、變式標籤 `tag`、完成狀態 `is_completed` 等）。
-   - 所有相關的 **RLS 安全性存取原則 (Row Level Security Policies)**、**Data API 存取權限 (GRANTs)** 與預設動作種子資料。
-4. 於 Supabase **Authentication -> URL Configuration**：
-   - 將 **Site URL** 設為 `http://localhost:3000`（或正式部署網址）。
-   - 將 **Redirect URLs** 加入 `http://localhost:3000/auth/callback`。
+本專案支援 **本地 Docker 開發環境（推薦）** 與 **Supabase 雲端專案** 兩種方式：
 
-#### 既有專案升級 (Upgrading Existing Databases)
-若您已部署過先前版本的資料庫，請依序在 Supabase SQL Editor 中執行 `supabase/migrations/` 內的歷程遷移檔案：
-- `20261014_add_calculation_type.sql`：新增計量模式欄位 (`calculation_type`)。
-- `20261014_add_is_completed.sql`：新增組數完成狀態欄位 (`is_completed`)。
-- `20261021_grant_table_permissions.sql`：補齊 PostgREST Data API 存取授權（符合 Supabase 資料表存取安全性規範）。
-- `20261024_add_exercise_tags.sql`：建立 `exercise_tags` 資料表並於 `workout_sets` 新增動作變式標籤 `tag` 欄位。
-- `20261028_add_glutes_category_and_exercises.sql`：更新動作分類檢查條件加入 `glutes` 類別，匯入 8 項居家與專業臀部訓練動作種子資料，並清理冗餘全域標籤以啟用客戶端動態本地化解析。
-- `20261105_add_profiles_and_admin.sql`：建立 `profiles` 會員資料表、同步觸發器、管理員專屬 RLS 存取原則與統計 RPC 函式。
+#### 方式 A：本地開發環境 (Local Development with Docker — 推薦)
+本機具備 Docker Desktop 時，可享有完全隔離、無限額度且極速重設的本地環境：
+1. 確保電腦已啟動 **Docker Desktop**。
+2. 於專案根目錄啟動本地 Supabase 容器：
+   ```bash
+   npx supabase start
+   ```
+   *(系統會自動執行 `supabase/migrations/` 下所有資料庫遷移腳本，並在終端機輸出本地 API URL、Studio 管理後台網址與 anon key)*
+3. 本地管理入口：
+   - **Supabase Studio (資料庫後台)**：[http://127.0.0.1:54323](http://127.0.0.1:54323)
+   - **Inbucket (測試郵件收件匣)**：[http://127.0.0.1:54324](http://127.0.0.1:54324)
+
+#### 方式 B：Supabase 雲端專案 (Cloud Production / Staging)
+若要在雲端建立正式或測試環境：
+1. 前往 [Supabase](https://supabase.com/) 建立專案。
+2. 透過 Supabase CLI 推送遷移腳本，或在線上 **SQL Editor** 執行 `supabase/schema.sql`。
+3. 於 Supabase **Authentication -> URL Configuration**：
+   - 將 **Site URL** 設為您的正式部署網址（例如 `https://your-domain.com`）。
+   - 將 **Redirect URLs** 加入 `https://your-domain.com/auth/callback`。
 
 ### 3. 設定環境變數
 
-複製 `.env.example` 並重新命名為 `.env.local`：
+複製 `.env.example` 並命名為 `.env.local`：
 
 ```bash
 cp .env.example .env.local
 ```
 
-編輯 `.env.local` 填入您的 Supabase 專案資訊與管理員帳號：
+編輯 `.env.local` 填入連線資訊（**本地開發請填本地容器資訊，切勿將正式機金鑰或個人 Email 提交至 Git**）：
 
 ```env
-# Supabase
-NEXT_PUBLIC_SUPABASE_URL=https://YOUR_PROJECT_ID.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=YOUR_ANON_KEY
-
-# App URL (用於 Magic Link 登入跳轉重定向)
+# ─────────────────────────────────────────────
+# 本地開發預設連線 (Local Supabase)
+# ─────────────────────────────────────────────
+NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
+NEXT_PUBLIC_SUPABASE_ANON_KEY=YOUR_LOCAL_ANON_KEY
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 
-# 管理員 Email 清單（選填，多個 Email 以逗號隔開）
+# 系統管理員 Email 清單（選填，多個 Email 以逗號隔開）
 ADMIN_EMAILS=admin@example.com
 ```
+
+> ⚠️ **安全性提醒**：`.env.local`、備份檔案（`*.dump`, `*.sql`）均已被 `.gitignore` 排除。請隨時確保正式環境的金鑰與個人真實信箱不外流至公開版本庫中。
 
 ### 4. 啟動開發伺服器與訪問管理後台
 
@@ -255,17 +269,23 @@ npm run dev
 ```
 
 開啟瀏覽器造訪 [http://localhost:3000](http://localhost:3000)，系統將自動依據瀏覽器偏好導向對應語系（如 `/hu`、`/zh-TW` 或 `/en`）。
-- **會員管理員後台**：以管理員 Email 登入後，點擊頂部或底部導覽列的盾牌圖示 🛡️ 即可進入管理員會員儀表板（亦可直接造訪 `/[locale]/admin`）。
-
+- **會員管理員後台**：以具備管理員權限之帳號登入後，點擊頂部或底部導覽列的盾牌圖示 🛡️ 即可進入管理員會員儀表板（亦可直接造訪 `/[locale]/admin`）。
 
 ---
 
 ## 📜 常用指令 (Available Scripts)
 
+### 前端指令
 - `npm run dev`：以開發模式啟動 Next.js 伺服器 (Turbopack)。
 - `npm run build`：編譯並打包正式環境版本。
 - `npm run start`：啟動正式環境伺服器。
 - `npm run lint`：執行 ESLint 程式碼檢查。
+
+### 本地資料庫指令 (Supabase CLI)
+- `npx supabase start`：啟動本地 Supabase Docker 容器。
+- `npx supabase stop`：關閉本地容器以釋放記憶體。
+- `npx supabase db reset`：一鍵清空本地資料庫並自動重新執行所有遷移腳本。
+- `npx supabase status`：查看本地各項服務運行狀態與連線 Port。
 
 ---
 
