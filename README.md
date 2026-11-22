@@ -49,7 +49,7 @@
 ### 4. ⚡ 多種運動計量模式 (Diverse Calculation Types)
 - 🏋️ **重量 + 次數 (`weight_reps`)**：重訓必備（如臥推、深蹲、硬舉、二頭彎舉、臀推）。
 - 🔄 **僅次數 (`reps`)**：自重徒手訓練、引體向上、伏地挺身、跪姿後踢、蚌式開合。
-- ⏱️ **僅時間 (`duration`)**：計時核心動作（如棒式平板支撐、靜態伸展）。
+- ⏱️ **僅時間 (`duration`)**：計時核心與有氧動作（如棒式平板支撐、跳舞、靜態伸展）。
 - 🏃 **距離 + 時間 (`distance_duration`)**：有氧慢跑、自行車、划船機，自動精準換算平均配速（如 `5'30"/km`，支援時間快速格式化）。
 - ⚡ **次數 + 時間 (`reps_duration`)**：兼顧次數與時間之運動（如跳繩、波比跳、高強度間歇訓練 HIIT）。
 
@@ -65,6 +65,9 @@
   - 完整收錄熱門臀部運動：臀橋 (Glute Bridge)、臀推 (Hip Thrust)、保加利亞分腿蹲 (Bulgarian Split Squat)、跪姿後踢 (Donkey Kick)、蚌式開合 (Clamshell)、消防栓式 (Fire Hydrant)、蛙式推臀 (Frog Pump)、側臥抬腿 (Side-Lying Leg Raise)。
   - 貼近居家情境的預設變式建議（自重、彈力帶、沙發/椅子、單腿、啞鈴等）。
   - 智慧預設計量模式：自動將徒手孤立動作設為「僅次數 (`reps`)」，負重複合動作設為「重量 + 次數 (`weight_reps`)」。
+- **多元有氧與舞蹈訓練支援 (Cardio & Dance Workouts)**：
+  - 內建跑步 (Running)、騎自行車 (Cycling)、跳繩 (Jump Rope) 與**跳舞 (Dancing / Tánc)** 等有氧項目。
+  - 「跳舞」預設為計時模式 (`duration`)，並內建三語系舞蹈風格變式標籤（芭蕾 Ballet / Balett、現代舞 Contemporary / Kortárs、街舞 Hip-hop、尊巴 Zumba、K-Pop、自由練習 Freestyle / Szabad gyakorlás）。
 - **動態多語系標籤解析 (Dynamic Client-Side Tags)**：
   - 預設動作變式標籤由客戶端依據當前瀏覽器語系動態匹配載入，資料庫專注保存使用者自定義標籤，避免多語系種子混雜。
 - **自定義動作與標籤管理**：
@@ -196,7 +199,8 @@ lili-workout/
 │       ├── 20261021173200_grant_table_permissions.sql # 補充 PostgREST Data API 存取權限
 │       ├── 20261024232900_add_exercise_tags.sql   # 新增動作變式標籤表與組數標籤欄位
 │       ├── 20261028013400_add_glutes_category_and_exercises.sql # 新增臀部分類與居家動作種子資料
-│       └── 20261105191100_add_profiles_and_admin.sql # 新增 profiles 會員表、同步觸發器與管理員 RLS
+│       ├── 20261105191100_add_profiles_and_admin.sql # 新增 profiles 會員表、同步觸發器與管理員 RLS
+│       └── 20261122174000_add_dancing_exercise.sql # 新增有氧「跳舞 (Dancing / Tánc)」內建動作
 ├── .env.example                  # 環境變數範例檔
 ├── next.config.ts                # Next.js 設定
 └── package.json                  # 專案依賴與腳本

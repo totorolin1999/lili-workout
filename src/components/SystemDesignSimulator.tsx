@@ -1297,7 +1297,7 @@ function LogicLabTab({ locale }: { locale: string }) {
     duration: {
       title: '僅時間 (Duration Only)',
       fields: ['秒數 / 時間 (mm:ss)'],
-      examples: '棒式平板支撐、靜態伸展、靠牆深蹲',
+      examples: '棒式平板支撐、跳舞、靜態伸展、靠牆深蹲',
       formula: '累積張力時間 (Time Under Tension) = 秒數累加',
     },
     distance_duration: {

@@ -159,56 +159,57 @@ CREATE POLICY "Users can delete own workout sets"
 -- ─────────────────────────────────────────────────────────────
 -- SEED: Built-in global exercises (Hungarian-first)
 -- ─────────────────────────────────────────────────────────────
-INSERT INTO exercises (name_hu, name_en, name_zh, category) VALUES
+INSERT INTO exercises (name_hu, name_en, name_zh, category, calculation_type) VALUES
   -- Mell / Chest
-  ('Fekvőtámasz', 'Push-up', '伏地挺身', 'chest'),
-  ('Mellnyomás (lappad)', 'Bench Press', '臥推', 'chest'),
-  ('Ferdetükönyomás', 'Incline Bench Press', '上斜臥推', 'chest'),
-  ('Mellrepülés (kábel)', 'Cable Fly', '夾胸', 'chest'),
+  ('Fekvőtámasz', 'Push-up', '伏地挺身', 'chest', 'weight_reps'),
+  ('Mellnyomás (lappad)', 'Bench Press', '臥推', 'chest', 'weight_reps'),
+  ('Ferdetükönyomás', 'Incline Bench Press', '上斜臥推', 'chest', 'weight_reps'),
+  ('Mellrepülés (kábel)', 'Cable Fly', '夾胸', 'chest', 'weight_reps'),
 
   -- Hát / Back
-  ('Húzódzkodás', 'Pull-up', '引體向上', 'back'),
-  ('Csónakevező', 'Bent-over Row', '俯身划船', 'back'),
-  ('Lat-húzás', 'Lat Pulldown', '下拉', 'back'),
-  ('Kábelhúzás ülve', 'Seated Cable Row', '坐姿划船', 'back'),
+  ('Húzódzkodás', 'Pull-up', '引體向上', 'back', 'weight_reps'),
+  ('Csónakevező', 'Bent-over Row', '俯身划船', 'back', 'weight_reps'),
+  ('Lat-húzás', 'Lat Pulldown', '下拉', 'back', 'weight_reps'),
+  ('Kábelhúzás ülve', 'Seated Cable Row', '坐姿划船', 'back', 'weight_reps'),
 
   -- Váll / Shoulders
-  ('Katonanyomás', 'Overhead Press', '肩上推舉', 'shoulders'),
-  ('Oldalemelés', 'Lateral Raise', '側平舉', 'shoulders'),
-  ('Előreemelés', 'Front Raise', '前平舉', 'shoulders'),
+  ('Katonanyomás', 'Overhead Press', '肩上推舉', 'shoulders', 'weight_reps'),
+  ('Oldalemelés', 'Lateral Raise', '側平舉', 'shoulders', 'weight_reps'),
+  ('Előreemelés', 'Front Raise', '前平舉', 'shoulders', 'weight_reps'),
 
   -- Kar / Arms
-  ('Bicepsz-hajlítás', 'Bicep Curl', '二頭彎舉', 'arms'),
-  ('Tricepsz-tolás (kábel)', 'Tricep Pushdown', '三頭下壓', 'arms'),
-  ('Kalapácos hajlítás', 'Hammer Curl', '錘式彎舉', 'arms'),
+  ('Bicepsz-hajlítás', 'Bicep Curl', '二頭彎舉', 'arms', 'weight_reps'),
+  ('Tricepsz-tolás (kábel)', 'Tricep Pushdown', '三頭下壓', 'arms', 'weight_reps'),
+  ('Kalapácos hajlítás', 'Hammer Curl', '錘式彎舉', 'arms', 'weight_reps'),
 
   -- Láb / Legs
-  ('Guggolás', 'Squat', '深蹲', 'legs'),
-  ('Kitörés', 'Lunge', '弓步', 'legs'),
-  ('Román felemelés', 'Romanian Deadlift', '羅馬尼亞硬舉', 'legs'),
-  ('Lábnyomás (gép)', 'Leg Press', '腿部推舉', 'legs'),
-  ('Vádli-emelés', 'Calf Raise', '提踵', 'legs'),
+  ('Guggolás', 'Squat', '深蹲', 'legs', 'weight_reps'),
+  ('Kitörés', 'Lunge', '弓步', 'legs', 'weight_reps'),
+  ('Román felemelés', 'Romanian Deadlift', '羅馬尼亞硬舉', 'legs', 'weight_reps'),
+  ('Lábnyomás (gép)', 'Leg Press', '腿部推舉', 'legs', 'weight_reps'),
+  ('Vádli-emelés', 'Calf Raise', '提踵', 'legs', 'weight_reps'),
 
   -- Farizom / Glutes (Home & Gym options)
-  ('Farhíd', 'Glute Bridge', '臀橋', 'glutes'),
-  ('Csípőtolás', 'Hip Thrust', '臀推', 'glutes'),
-  ('Bolgár guggolás', 'Bulgarian Split Squat', '保加利亞分腿蹲', 'glutes'),
-  ('Szamárrúgás', 'Donkey Kick', '跪姿後踢', 'glutes'),
-  ('Kagyló-gyakorlat', 'Clamshell', '蚌式開合', 'glutes'),
-  ('Oldalsó térdemelés (tűzcsap)', 'Fire Hydrant', '消防栓式', 'glutes'),
-  ('Békapumpa', 'Frog Pump', '蛙式推臀', 'glutes'),
-  ('Oldalsó lábemelés', 'Side-Lying Leg Raise', '側臥抬腿', 'glutes'),
+  ('Farhíd', 'Glute Bridge', '臀橋', 'glutes', 'weight_reps'),
+  ('Csípőtolás', 'Hip Thrust', '臀推', 'glutes', 'weight_reps'),
+  ('Bolgár guggolás', 'Bulgarian Split Squat', '保加利亞分腿蹲', 'glutes', 'weight_reps'),
+  ('Szamárrúgás', 'Donkey Kick', '跪姿後踢', 'glutes', 'reps'),
+  ('Kagyló-gyakorlat', 'Clamshell', '蚌式開合', 'glutes', 'reps'),
+  ('Oldalsó térdemelés (tűzcsap)', 'Fire Hydrant', '消防栓式', 'glutes', 'reps'),
+  ('Békapumpa', 'Frog Pump', '蛙式推臀', 'glutes', 'reps'),
+  ('Oldalsó lábemelés', 'Side-Lying Leg Raise', '側臥抬腿', 'glutes', 'reps'),
 
   -- Törzs / Core
-  ('Hasprés', 'Crunch', '捲腹', 'core'),
-  ('Deszka', 'Plank', '平板支撐', 'core'),
-  ('Lábemelés', 'Leg Raise', '腿部上舉', 'core'),
-  ('Orosz csavar', 'Russian Twist', '俄式轉體', 'core'),
+  ('Hasprés', 'Crunch', '捲腹', 'core', 'weight_reps'),
+  ('Deszka', 'Plank', '平板支撐', 'core', 'duration'),
+  ('Lábemelés', 'Leg Raise', '腿部上舉', 'core', 'weight_reps'),
+  ('Orosz csavar', 'Russian Twist', '俄式轉體', 'core', 'weight_reps'),
 
   -- Kardió / Cardio
-  ('Futás', 'Running', '跑步', 'cardio'),
-  ('Kerékpározás', 'Cycling', '騎自行車', 'cardio'),
-  ('Ugrókötél', 'Jump Rope', '跳繩', 'cardio')
+  ('Futás', 'Running', '跑步', 'cardio', 'distance_duration'),
+  ('Kerékpározás', 'Cycling', '騎自行車', 'cardio', 'distance_duration'),
+  ('Ugrókötél', 'Jump Rope', '跳繩', 'cardio', 'reps_duration'),
+  ('Tánc', 'Dancing', '跳舞', 'cardio', 'duration')
 ON CONFLICT DO NOTHING;
 
 

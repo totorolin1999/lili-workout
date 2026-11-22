@@ -107,6 +107,11 @@ export function getExerciseCalculationType(
     return 'duration'
   }
 
+  // Dancing: duration only
+  if (nameZh.includes('跳舞') || nameEn.includes('danc') || nameHu.includes('tánc')) {
+    return 'duration'
+  }
+
   // Glutes isolation movements (home-friendly bodyweight/band exercises): reps default
   if (
     nameZh.includes('後踢') || nameEn.includes('donkey kick') || nameHu.includes('szamárrúgás') ||
@@ -168,6 +173,7 @@ const DEFAULT_TAGS_MAP: Record<Locale, Array<{ keywords: string[]; tags: string[
     { keywords: ['跑步', 'running', 'futás'], tags: ['戶外', '跑步機', '間歇', '慢跑'] },
     { keywords: ['騎自行車', 'cycling', 'kerékpározás'], tags: ['戶外', '飛輪'] },
     { keywords: ['跳繩', 'jump rope', 'ugrókötél'], tags: ['雙迴旋', '單腳', '交叉'] },
+    { keywords: ['跳舞', 'dancing', 'dance', 'tánc'], tags: ['芭蕾', '現代舞', '街舞', '尊巴', 'K-Pop', '自由練習'] },
   ],
   en: [
     { keywords: ['保加利亞', 'bulgarian', 'bolgár'], tags: ['Couch/Chair', 'Bodyweight', 'Dumbbell', 'Glute-focused'] },
@@ -196,6 +202,7 @@ const DEFAULT_TAGS_MAP: Record<Locale, Array<{ keywords: string[]; tags: string[
     { keywords: ['跑步', 'running', 'futás'], tags: ['Outdoor', 'Treadmill', 'Interval', 'Jogging'] },
     { keywords: ['騎自行車', 'cycling', 'kerékpározás'], tags: ['Outdoor', 'Spin bike'] },
     { keywords: ['跳繩', 'jump rope', 'ugrókötél'], tags: ['Double under', 'Single leg', 'Cross'] },
+    { keywords: ['跳舞', 'dancing', 'dance', 'tánc'], tags: ['Ballet', 'Contemporary', 'Hip-hop', 'Zumba', 'K-Pop', 'Freestyle'] },
   ],
   hu: [
     { keywords: ['保加利亞', 'bulgarian', 'bolgár'], tags: ['Kanapén/Széken', 'Saját testsúly', 'Kézisúlyzóval', 'Farizom fókusz'] },
@@ -215,6 +222,7 @@ const DEFAULT_TAGS_MAP: Record<Locale, Array<{ keywords: string[]; tags: string[
     { keywords: ['羅馬尼亞硬舉', 'romanian deadlift', 'román felemelés'], tags: ['Rúddal', 'Kézisúlyzóval', 'Egy lábon'] },
     { keywords: ['平板支撐', 'plank', 'deszka'], tags: ['Normál', 'Oldalsó', 'Dinamikus'] },
     { keywords: ['跑步', 'running', 'futás'], tags: ['Kültéri', 'Futópad', 'Intervallum', 'Kocogás'] },
+    { keywords: ['跳舞', 'dancing', 'dance', 'tánc'], tags: ['Balett', 'Kortárs', 'Hip-hop', 'Zumba', 'K-Pop', 'Szabad gyakorlás'] },
   ],
 }
 
